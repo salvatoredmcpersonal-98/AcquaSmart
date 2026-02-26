@@ -8,7 +8,7 @@ import LogTestModal from './LogTestModal';
 import HistoryChart from './HistoryChart';
 import { Responsive } from 'react-grid-layout';
 
-// Definiamo i tipi per evitare l'errore onClick e isEditMode
+// Interfaccia semplificata per StatCard
 interface StatCardProps {
   icon: React.ReactNode;
   label: string;
@@ -18,7 +18,7 @@ interface StatCardProps {
   isEditMode?: boolean;
 }
 
-export default function StatCard({ icon, label, value, colorClass, onClick, isEditMode }: StatCardProps) {
+function StatCard({ icon, label, value, colorClass, onClick, isEditMode }: StatCardProps) {
   return (
     <div
       className={`stat-card relative bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center h-full ${colorClass || ''} ${isEditMode ? 'edit-mode-active' : ''}`}
