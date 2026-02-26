@@ -71,8 +71,10 @@
 }
 
 @layer components {
-  .interactive-stat-card {
-    touch-action: manipulation;
+  /* se vuoi mantenere la non‑selezionabilità del testo
+     applichiamola solo agli elementi statici */
+  .interactive-stat-card .stat-label,
+  .interactive-stat-card .stat-value {
     user-select: none;
   }
 }
