@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Trash2 } from 'lucide-react';
 import { useLocale } from '../context/LocaleContext';

@@ -74,35 +74,21 @@
 
 @layer components {
   /* GESTIONE LONG PRESS & DRAG */
-  .interactive-stat-card {
-    /* Impedisce il menu "Copia/Salva" del telefono durante la pressione prolungata */
-    -webkit-touch-callout: none !important; 
-    -webkit-user-select: none !important;   
-    user-select: none !important;
-    
-    /* Disabilita i gesti del browser (scroll/zoom) sulla card per non interferire con il drag */
-    touch-action: none !important; 
+  /* nessuna proprietà che blocchi click/touch sui figli */
+
+  /* mantenere non selezionabili soltanto le etichette */
+  .interactive-stat-card .stat-label,
+  .interactive-stat-card .stat-value {
+    user-select: none;
   }
 
-  /* Classe per sbloccare l'interazione quando NON siamo in modalità edit */
-  .nodrag {
-    touch-action: auto !important;
-    user-select: auto !important;
-    -webkit-user-select: auto !important;
-    pointer-events: auto !important;
-    -webkit-touch-callout: default !important;
-  }
-
-  /* Animazione opzionale per le card in modalità modifica */
-  .edit-mode-active {
-    animation: shake 0.5s infinite ease-in-out;
-    border-color: rgba(56, 189, 248, 0.5) !important;
-  }
-
-  @keyframes shake {
-    0% { transform: rotate(0deg); }
-    25% { transform: rotate(0.5deg); }
-    75% { transform: rotate(-0.5deg); }
-    100% { transform: rotate(0deg); }
+  /* i campi del form devono poter ricevere eventi */
+  .interactive-stat-card input,
+  .interactive-stat-card textarea,
+  .interactive-stat-card button,
+  .interactive-stat-card select {
+    pointer-events: auto;
+    touch-action: auto;
+    user-select: text;
   }
 }
