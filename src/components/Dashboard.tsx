@@ -26,7 +26,7 @@ const StatCard = ({ icon, label, value, colorClass, onClick }) => {
 
   if (onClick) {
     return (
-      <button onClick={onClick} className={`${commonClasses} ${interactiveClasses}`}>
+      <button onClick={onClick} className={`${commonClasses} ${interactiveClasses} interactive-stat-card`}>
         {content}
       </button>
     );

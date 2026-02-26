@@ -68,3 +68,10 @@
     @apply bg-zinc-900 font-sans;
   }
 }
+
+@layer components {
+  .interactive-stat-card {
+    @apply touch-action-manipulation user-select-none;
+    touch-action: manipulation;
+  }
+}
