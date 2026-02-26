@@ -10,23 +10,29 @@ import { Responsive } from 'react-grid-layout';
 
 const StatCard = ({ icon, label, value, colorClass, onClick }) => {
   const commonClasses = "bg-white/5 border border-white/10 rounded-2xl p-3 lg:p-4 w-full h-full flex flex-col text-left justify-between min-w-[150px]";
-  const interactiveClasses = "hover:bg-white/10 transition-colors duration-200";
+  const interactiveClasses = "hover:bg-white/10 transition-colors duration-200 cursor-pointer nodrag"; // Aggiunto nodrag e cursor-pointer
 
   const content = (
     <>
-      <div className="flex items-center gap-2 lg:gap-3">
+      <div className="flex items-center gap-2 lg:gap-3 pointer-events-none">
         <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center ${colorClass}`}>
           {icon}
         </div>
         <span className="text-white/60 text-[11px] sm:text-xs lg:text-sm">{label}</span>
       </div>
-      <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">{value}</p>
+      <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-white pointer-events-none">{value}</p>
     </>
   );
 
   if (onClick) {
     return (
-      <button onClick={onClick} className={`${commonClasses} ${interactiveClasses} interactive-stat-card`}>
+      <button 
+        onClick={(e) => {
+          e.stopPropagation(); // Evita interferenze con la griglia
+          onClick();
+        }} 
+        className={`${commonClasses} ${interactiveClasses} interactive-stat-card`}
+      >
         {content}
       </button>
     );
@@ -99,8 +105,6 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
               cols={{lg: 12, md: 12, sm: 6, xs: 6, xxs: 6}}
               rowHeight={90}
               width={gridWidth}
-              compactType="horizontal"
-              preventCollision={true}
             >
               <div key="health" className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center min-w-[150px]">
                 <p className="text-xs sm:text-sm md:text-base text-white/60 mb-2">{t('dashboard_health_score')}</p>
@@ -109,21 +113,21 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
                 </div>
                 <p className="text-[11px] sm:text-xs md:text-sm text-white/50 mt-2">Ottimo stato</p>
               </div>
-              <div key="temp">
+              <div key="temp" className="nodrag">
                  <StatCard icon={<Thermometer size={20} className="text-red-300" />} label={t('log_test_temp')} value={latestLog.temp ? formatTemperature(latestLog.temp) : '--'} colorClass="bg-red-500/20" onClick={() => setEditingParam('temp')} />
               </div>
-              <div key="ph">
+              <div key="ph" className="nodrag">
                 <StatCard icon={<TestTube2 size={20} className="text-sky-300" />} label="pH" value={latestLog.ph || '--'} colorClass="bg-sky-500/20" onClick={() => setEditingParam('ph')} />
               </div>
-              <div key="nitrates">
+              <div key="nitrates" className="nodrag">
                 <StatCard icon={<Droplets size={20} className="text-amber-300" />} label={t('log_test_nitrates')} value={latestLog.nitrates ? `${latestLog.nitrates} mg/L` : '--'} colorClass="bg-amber-500/20" onClick={() => setEditingParam('nitrates')} />
               </div>
               <div key="inventory">
-                <StatCard icon={<DollarSign size={20} className="text-lime-300" />} label={t('inventory_total_value')} value={formatCurrency(inventoryValue)} colorClass="bg-lime-500/20" />
+                <StatCard icon={<DollarSign size={20} className="text-lime-300" />} label={t('inventory_total_value')} value={formatCurrency(inventoryValue)} colorClass="bg-lime-500/20" onClick={undefined} />
               </div>
               <div key="chart" className="bg-white/5 border border-white/10 rounded-2xl p-3 md:p-4 flex flex-col min-w-[150px]">
                  <h2 className="text-lg md:text-xl font-bold mb-2 text-white/90 px-2 pt-1">{t('chart_title')}</h2>
-                 <div className="flex-grow w-full h-full">
+                 <div className="flex-grow w-full h-full nodrag">
                     <HistoryChart data={testLogs} />
                  </div>
               </div>
