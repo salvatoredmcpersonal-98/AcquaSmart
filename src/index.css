@@ -1,5 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
 @import "tailwindcss";
 
 @layer base {
@@ -74,15 +73,14 @@
 
 @layer components {
   /* GESTIONE LONG PRESS & DRAG */
-  /* nessuna proprietà che blocchi click/touch sui figli */
-
   /* mantenere non selezionabili soltanto le etichette */
   .interactive-stat-card .stat-label,
   .interactive-stat-card .stat-value {
     user-select: none;
   }
 
-  /* i campi del form devono poter ricevere eventi */
+  /* i campi del form che stanno dentro la card devono poter
+     ricevere eventi; questo è l’unico “sblocco” necessario */
   .interactive-stat-card input,
   .interactive-stat-card textarea,
   .interactive-stat-card button,
