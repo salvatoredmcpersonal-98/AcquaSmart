@@ -138,13 +138,31 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
   // Helper for items that aren't StatCards (Health and Chart)
   const useLongPressLogic = () => {
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const startPosRef = useRef<{ x: number, y: number } | null>(null);
     
     const start = (e: any) => {
       if (isEditMode) return;
-      // We don't preventDefault here yet to allow normal clicks
+      
+      // Store starting position to detect movement (scrolling)
+      const touch = e.touches ? e.touches[0] : e;
+      startPosRef.current = { x: touch.clientX, y: touch.clientY };
+
       timerRef.current = setTimeout(() => {
         handleLongPress(e);
-      }, 800);
+      }, 1000); // Increased to 1s for better reliability on mobile
+    };
+    
+    const move = (e: any) => {
+      if (!startPosRef.current || !timerRef.current) return;
+      
+      const touch = e.touches ? e.touches[0] : e;
+      const dx = Math.abs(touch.clientX - startPosRef.current.x);
+      const dy = Math.abs(touch.clientY - startPosRef.current.y);
+      
+      // If moved more than 10px, it's a scroll/move, not a long press
+      if (dx > 10 || dy > 10) {
+        stop();
+      }
     };
     
     const stop = () => {
@@ -152,13 +170,19 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
+      startPosRef.current = null;
     };
     
     return {
       onPointerDown: start,
+      onPointerMove: move,
       onPointerUp: stop,
       onPointerLeave: stop,
-      onPointerCancel: stop
+      onPointerCancel: stop,
+      onTouchStart: start,
+      onTouchMove: move,
+      onTouchEnd: stop,
+      onTouchCancel: stop
     };
   };
 
@@ -212,7 +236,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
               useCSSTransforms={true}
             >
               <div key="health" 
-                className={`bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center min-w-[150px] relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-500/10' : ''}`}
+                className={`bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center min-w-[150px] relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] z-20 animate-wiggle' : ''}`}
                 {...healthLongPress}
               >
                 {isEditMode && (
@@ -228,7 +252,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
               </div>
               
               <div key="temp" 
-                className={`bg-white/5 border border-white/10 rounded-2xl relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-500/10' : ''}`}
+                className={`bg-white/5 border border-white/10 rounded-2xl relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] z-20 animate-wiggle' : ''}`}
                 {...tempLongPress}
               >
                 {isEditMode && (
@@ -247,7 +271,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
               </div>
 
               <div key="ph" 
-                className={`bg-white/5 border border-white/10 rounded-2xl relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-500/10' : ''}`}
+                className={`bg-white/5 border border-white/10 rounded-2xl relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] z-20 animate-wiggle' : ''}`}
                 {...phLongPress}
               >
                 {isEditMode && (
@@ -266,7 +290,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
               </div>
 
               <div key="nitrates" 
-                className={`bg-white/5 border border-white/10 rounded-2xl relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-500/10' : ''}`}
+                className={`bg-white/5 border border-white/10 rounded-2xl relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] z-20 animate-wiggle' : ''}`}
                 {...nitratesLongPress}
               >
                 {isEditMode && (
@@ -285,7 +309,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
               </div>
 
               <div key="inventory" 
-                className={`bg-white/5 border border-white/10 rounded-2xl relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-500/10' : ''}`}
+                className={`bg-white/5 border border-white/10 rounded-2xl relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] z-20 animate-wiggle' : ''}`}
                 {...inventoryLongPress}
               >
                 {isEditMode && (
@@ -303,7 +327,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
               </div>
 
               <div key="inhabitants" 
-                className={`bg-white/5 border border-white/10 rounded-2xl relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-500/10' : ''}`}
+                className={`bg-white/5 border border-white/10 rounded-2xl relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] z-20 animate-wiggle' : ''}`}
                 {...inhabitantsLongPress}
               >
                 {isEditMode && (
@@ -345,7 +369,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
               </div>
 
               <div key="chart" 
-                className={`bg-white/5 border border-white/10 rounded-2xl p-3 md:p-4 flex flex-col min-w-[150px] relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-500/10' : ''}`}
+                className={`bg-white/5 border border-white/10 rounded-2xl p-3 md:p-4 flex flex-col min-w-[150px] relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] z-20 animate-wiggle' : ''}`}
                 {...chartLongPress}
               >
                  {isEditMode && (
