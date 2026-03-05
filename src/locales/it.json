@@ -43,5 +43,13 @@
   "log_nitrates_title": "Registra Nitrati",
   "log_history_title": "Storico Recente",
   "reset_history_button": "Resetta Storico",
-  "reset_history_confirm": "Sei sicuro di voler eliminare tutti i dati per questo parametro? L'azione non è reversibile."
+  "reset_history_confirm": "Sei sicuro di voler eliminare tutti i dati per questo parametro? L'azione non è reversibile.",
+  "dashboard_inhabitants": "Abitanti",
+  "inhabitants_title": "Abitanti Acquario",
+  "inhabitants_fish": "Pesci",
+  "inhabitants_plants": "Piante",
+  "inhabitants_add_fish": "Aggiungi pesce...",
+  "inhabitants_add_plant": "Aggiungi pianta...",
+  "inhabitants_empty": "Nessun elemento aggiunto",
+  "add_button": "Aggiungi"
 }

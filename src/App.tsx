@@ -13,6 +13,33 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [tanks, setTanks] = usePersistentState('userTanks', []);
   const [testLogs, setTestLogs] = usePersistentState('userTestLogs', []);
+  const initialInhabitants = {
+    fish: [
+      { id: 1, name: 'Neon Tetra', quantity: 10, price: 1.5 },
+      { id: 2, name: 'Guppy', quantity: 5, price: 2.5 },
+      { id: 3, name: 'Molly', quantity: 4, price: 3.0 },
+      { id: 4, name: 'Platy', quantity: 6, price: 2.5 },
+      { id: 5, name: 'Corydoras', quantity: 4, price: 4.5 },
+      { id: 6, name: 'Angelfish', quantity: 2, price: 8.0 },
+      { id: 7, name: 'Betta Splendens', quantity: 1, price: 12.0 },
+      { id: 8, name: 'Zebra Danio', quantity: 8, price: 1.5 },
+      { id: 9, name: 'Cherry Barb', quantity: 6, price: 2.0 },
+      { id: 10, name: 'Dwarf Gourami', quantity: 2, price: 6.0 }
+    ],
+    plants: [
+      { id: 11, name: 'Anubias', quantity: 3, price: 8.0 },
+      { id: 12, name: 'Java Fern', quantity: 2, price: 7.0 },
+      { id: 13, name: 'Amazon Sword', quantity: 1, price: 6.0 },
+      { id: 14, name: 'Vallisneria', quantity: 5, price: 4.0 },
+      { id: 15, name: 'Cryptocoryne', quantity: 4, price: 5.0 },
+      { id: 16, name: 'Java Moss', quantity: 2, price: 6.0 },
+      { id: 17, name: 'Hornwort', quantity: 3, price: 3.0 },
+      { id: 18, name: 'Water Wisteria', quantity: 2, price: 5.0 },
+      { id: 19, name: 'Bacopa Caroliniana', quantity: 4, price: 4.0 },
+      { id: 20, name: 'Ludwigia Repens', quantity: 3, price: 5.0 }
+    ]
+  };
+  const [inhabitants, setInhabitants] = usePersistentState('userInhabitants_v3', initialInhabitants);
   const trialState = useTrial();
 
   const handleLogin = () => {
@@ -24,6 +51,7 @@ export default function App() {
     setIsAuthenticated(false);
     setTanks([]); // This will also clear it from localStorage via the hook
     setTestLogs([]);
+    setInhabitants({ fish: [], plants: [] });
   };
 
   const handleTankAdded = (newTank) => {
@@ -59,6 +87,10 @@ export default function App() {
     });
   };
 
+  const onUpdateInhabitants = (newInhabitants) => {
+    setInhabitants(newInhabitants);
+  };
+
   const renderPage = () => {
     switch (currentPage) {
       case 'settings':
@@ -70,6 +102,8 @@ export default function App() {
           onLogTest={handleTestLogged} 
           handleDeleteTestLog={handleDeleteTestLog}
           onResetHistory={onResetHistory}
+          inhabitants={inhabitants}
+          onUpdateInhabitants={onUpdateInhabitants}
         />;
     }
   };

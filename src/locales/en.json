@@ -43,5 +43,13 @@
   "log_nitrates_title": "Log Nitrates",
   "log_history_title": "Recent History",
   "reset_history_button": "Reset History",
-  "reset_history_confirm": "Are you sure you want to delete all entries for this parameter? This action cannot be undone."
+  "reset_history_confirm": "Are you sure you want to delete all entries for this parameter? This action cannot be undone.",
+  "dashboard_inhabitants": "Inhabitants",
+  "inhabitants_title": "Aquarium Inhabitants",
+  "inhabitants_fish": "Fish",
+  "inhabitants_plants": "Plants",
+  "inhabitants_add_fish": "Add fish...",
+  "inhabitants_add_plant": "Add plant...",
+  "inhabitants_empty": "No items added",
+  "add_button": "Add"
 }
