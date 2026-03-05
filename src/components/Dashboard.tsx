@@ -26,26 +26,18 @@ const StatCard = ({ icon, label, value, colorClass, onClick = undefined, isEditM
 
   if (onClick) {
     return (
-      <div 
-        role="button"
-        tabIndex={0}
+      <button 
+        type="button"
         onClick={(e) => {
           if (isEditMode) return;
-          e.preventDefault();
+          // Don't prevent default here as it might interfere with touch lifecycle
           e.stopPropagation();
           onClick();
         }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            if (isEditMode) return;
-            e.preventDefault();
-            onClick();
-          }
-        }}
-        className={`w-full h-full p-3 lg:p-4 flex flex-col outline-none z-10 ${interactiveClasses} ${isEditMode ? 'cursor-default' : 'cursor-pointer'}`}
+        className={`w-full h-full p-3 lg:p-4 flex flex-col outline-none border-none bg-transparent text-left appearance-none select-none z-10 ${interactiveClasses} ${isEditMode ? 'cursor-default' : 'cursor-pointer'}`}
       >
         {content}
-      </div>
+      </button>
     );
   }
 
@@ -124,10 +116,8 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
 
   const ResponsiveGridLayout = Responsive as any;
 
-  const handleLongPress = (e?: any) => {
+  const handleLongPress = () => {
     if (!isEditMode) {
-      if (e && e.stopPropagation) e.stopPropagation();
-      if (e && e.preventDefault) e.preventDefault();
       setIsEditMode(true);
       if (navigator.vibrate) {
         navigator.vibrate(60);
@@ -135,31 +125,38 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
     }
   };
 
-  // Helper for items that aren't StatCards (Health and Chart)
+  // Unified Long Press Logic for Mobile & Desktop
   const useLongPressLogic = () => {
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const startPosRef = useRef<{ x: number, y: number } | null>(null);
+    const isLongPressTriggered = useRef(false);
     
     const start = (e: any) => {
       if (isEditMode) return;
       
-      // Store starting position to detect movement (scrolling)
-      const touch = e.touches ? e.touches[0] : e;
-      startPosRef.current = { x: touch.clientX, y: touch.clientY };
+      isLongPressTriggered.current = false;
+      // Support both touch and mouse
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+      
+      startPosRef.current = { x: clientX, y: clientY };
 
       timerRef.current = setTimeout(() => {
-        handleLongPress(e);
-      }, 1000); // Increased to 1s for better reliability on mobile
+        isLongPressTriggered.current = true;
+        handleLongPress();
+      }, 700); // Slightly faster for better feel
     };
     
     const move = (e: any) => {
       if (!startPosRef.current || !timerRef.current) return;
       
-      const touch = e.touches ? e.touches[0] : e;
-      const dx = Math.abs(touch.clientX - startPosRef.current.x);
-      const dy = Math.abs(touch.clientY - startPosRef.current.y);
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
       
-      // If moved more than 10px, it's a scroll/move, not a long press
+      const dx = Math.abs(clientX - startPosRef.current.x);
+      const dy = Math.abs(clientY - startPosRef.current.y);
+      
+      // If moved more than 10px, it's likely a scroll, cancel long press
       if (dx > 10 || dy > 10) {
         stop();
       }
@@ -179,10 +176,11 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
       onPointerUp: stop,
       onPointerLeave: stop,
       onPointerCancel: stop,
-      onTouchStart: start,
-      onTouchMove: move,
-      onTouchEnd: stop,
-      onTouchCancel: stop
+      onContextMenu: (e: any) => {
+        if (isEditMode || isLongPressTriggered.current) {
+          e.preventDefault();
+        }
+      }
     };
   };
 
@@ -236,151 +234,165 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
               useCSSTransforms={true}
             >
               <div key="health" 
-                className={`bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center min-w-[150px] relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] z-20 animate-wiggle' : ''}`}
+                className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
                 {...healthLongPress}
               >
-                {isEditMode && (
-                  <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
-                    <GripVertical size={20} />
+                <div className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center min-w-[150px] transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}>
+                  {isEditMode && (
+                    <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
+                      <GripVertical size={20} />
+                    </div>
+                  )}
+                  <p className="text-xs sm:text-sm md:text-base text-white/60 mb-2">{t('dashboard_health_score')}</p>
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-full border-4 border-emerald-400 flex items-center justify-center my-2">
+                    <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-emerald-400">92</span>
                   </div>
-                )}
-                <p className="text-xs sm:text-sm md:text-base text-white/60 mb-2">{t('dashboard_health_score')}</p>
-                <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-full border-4 border-emerald-400 flex items-center justify-center my-2">
-                  <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-emerald-400">92</span>
+                  <p className="text-[11px] sm:text-xs md:text-sm text-white/50 mt-2">Ottimo stato</p>
                 </div>
-                <p className="text-[11px] sm:text-xs md:text-sm text-white/50 mt-2">Ottimo stato</p>
               </div>
               
               <div key="temp" 
-                className={`bg-white/5 border border-white/10 rounded-2xl relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] z-20 animate-wiggle' : ''}`}
+                className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
                 {...tempLongPress}
               >
-                {isEditMode && (
-                  <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
-                    <GripVertical size={20} />
-                  </div>
-                )}
-                <StatCard 
-                  icon={<Thermometer size={20} className="text-red-300" />} 
-                  label={t('log_test_temp')} 
-                  value={latestLog.temp ? formatTemperature(latestLog.temp) : '--'} 
-                  colorClass="bg-red-500/20" 
-                  onClick={() => setEditingParam('temp')}
-                  isEditMode={isEditMode}
-                />
+                <div className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}>
+                  {isEditMode && (
+                    <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
+                      <GripVertical size={20} />
+                    </div>
+                  )}
+                  <StatCard 
+                    icon={<Thermometer size={20} className="text-red-300" />} 
+                    label={t('log_test_temp')} 
+                    value={latestLog.temp ? formatTemperature(latestLog.temp) : '--'} 
+                    colorClass="bg-red-500/20" 
+                    onClick={() => setEditingParam('temp')}
+                    isEditMode={isEditMode}
+                  />
+                </div>
               </div>
 
               <div key="ph" 
-                className={`bg-white/5 border border-white/10 rounded-2xl relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] z-20 animate-wiggle' : ''}`}
+                className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
                 {...phLongPress}
               >
-                {isEditMode && (
-                  <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
-                    <GripVertical size={20} />
-                  </div>
-                )}
-                <StatCard 
-                  icon={<TestTube2 size={20} className="text-sky-300" />} 
-                  label="pH" 
-                  value={latestLog.ph || '--'} 
-                  colorClass="bg-sky-500/20" 
-                  onClick={() => setEditingParam('ph')}
-                  isEditMode={isEditMode}
-                />
+                <div className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}>
+                  {isEditMode && (
+                    <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
+                      <GripVertical size={20} />
+                    </div>
+                  )}
+                  <StatCard 
+                    icon={<TestTube2 size={20} className="text-sky-300" />} 
+                    label="pH" 
+                    value={latestLog.ph || '--'} 
+                    colorClass="bg-sky-500/20" 
+                    onClick={() => setEditingParam('ph')}
+                    isEditMode={isEditMode}
+                  />
+                </div>
               </div>
 
               <div key="nitrates" 
-                className={`bg-white/5 border border-white/10 rounded-2xl relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] z-20 animate-wiggle' : ''}`}
+                className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
                 {...nitratesLongPress}
               >
-                {isEditMode && (
-                  <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
-                    <GripVertical size={20} />
-                  </div>
-                )}
-                <StatCard 
-                  icon={<Droplets size={20} className="text-amber-300" />} 
-                  label={t('log_test_nitrates')} 
-                  value={latestLog.nitrates ? `${latestLog.nitrates} mg/L` : '--'} 
-                  colorClass="bg-amber-500/20" 
-                  onClick={() => setEditingParam('nitrates')}
-                  isEditMode={isEditMode}
-                />
+                <div className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}>
+                  {isEditMode && (
+                    <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
+                      <GripVertical size={20} />
+                    </div>
+                  )}
+                  <StatCard 
+                    icon={<Droplets size={20} className="text-amber-300" />} 
+                    label={t('log_test_nitrates')} 
+                    value={latestLog.nitrates ? `${latestLog.nitrates} mg/L` : '--'} 
+                    colorClass="bg-amber-500/20" 
+                    onClick={() => setEditingParam('nitrates')}
+                    isEditMode={isEditMode}
+                  />
+                </div>
               </div>
 
               <div key="inventory" 
-                className={`bg-white/5 border border-white/10 rounded-2xl relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] z-20 animate-wiggle' : ''}`}
+                className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
                 {...inventoryLongPress}
               >
-                {isEditMode && (
-                  <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
-                    <GripVertical size={20} />
-                  </div>
-                )}
-                <StatCard 
-                  icon={<DollarSign size={20} className="text-lime-300" />} 
-                  label={t('inventory_total_value')} 
-                  value={formatCurrency(inventoryValue)} 
-                  colorClass="bg-lime-500/20"
-                  isEditMode={isEditMode}
-                />
+                <div className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}>
+                  {isEditMode && (
+                    <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
+                      <GripVertical size={20} />
+                    </div>
+                  )}
+                  <StatCard 
+                    icon={<DollarSign size={20} className="text-lime-300" />} 
+                    label={t('inventory_total_value')} 
+                    value={formatCurrency(inventoryValue)} 
+                    colorClass="bg-lime-500/20"
+                    isEditMode={isEditMode}
+                  />
+                </div>
               </div>
 
               <div key="inhabitants" 
-                className={`bg-white/5 border border-white/10 rounded-2xl relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] z-20 animate-wiggle' : ''}`}
+                className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
                 {...inhabitantsLongPress}
               >
-                {isEditMode && (
-                  <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
-                    <GripVertical size={20} />
-                  </div>
-                )}
-                <div 
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => !isEditMode && setShowInhabitantsModal(true)}
-                  className={`w-full h-full p-4 flex items-center justify-around ${!isEditMode ? 'cursor-pointer hover:bg-white/10' : ''} transition-colors duration-200`}
-                >
-                  {/* Plants Section */}
-                  <div className="flex flex-col items-center text-center">
-                    <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center mb-2">
-                      <Leaf size={24} className="text-emerald-400" />
+                <div className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}>
+                  {isEditMode && (
+                    <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
+                      <GripVertical size={20} />
                     </div>
-                    <span className="text-white/60 text-xs font-medium uppercase tracking-wider">{t('inhabitants_plants') || 'Piante'}</span>
-                    <p className="text-3xl font-bold text-white mt-1">
-                      {inhabitants.plants.reduce((acc, p) => acc + (p.quantity || 1), 0)}
-                    </p>
-                  </div>
-
-                  {/* Divider */}
-                  <div className="h-16 w-px bg-white/10" />
-
-                  {/* Fish Section */}
-                  <div className="flex flex-col items-center text-center">
-                    <div className="w-12 h-12 rounded-full bg-orange-500/20 flex items-center justify-center mb-2">
-                      <Fish size={24} className="text-orange-400" />
+                  )}
+                  <div 
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => !isEditMode && setShowInhabitantsModal(true)}
+                    className={`w-full h-full p-4 flex items-center justify-around ${!isEditMode ? 'cursor-pointer hover:bg-white/10' : ''} transition-colors duration-200`}
+                  >
+                    {/* Plants Section */}
+                    <div className="flex flex-col items-center text-center">
+                      <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center mb-2">
+                        <Leaf size={24} className="text-emerald-400" />
+                      </div>
+                      <span className="text-white/60 text-xs font-medium uppercase tracking-wider">{t('inhabitants_plants') || 'Piante'}</span>
+                      <p className="text-3xl font-bold text-white mt-1">
+                        {inhabitants.plants.reduce((acc, p) => acc + (p.quantity || 1), 0)}
+                      </p>
                     </div>
-                    <span className="text-white/60 text-xs font-medium uppercase tracking-wider">{t('inhabitants_fish') || 'Pesci'}</span>
-                    <p className="text-3xl font-bold text-white mt-1">
-                      {inhabitants.fish.reduce((acc, f) => acc + (f.quantity || 1), 0)}
-                    </p>
+
+                    {/* Divider */}
+                    <div className="h-16 w-px bg-white/10" />
+
+                    {/* Fish Section */}
+                    <div className="flex flex-col items-center text-center">
+                      <div className="w-12 h-12 rounded-full bg-orange-500/20 flex items-center justify-center mb-2">
+                        <Fish size={24} className="text-orange-400" />
+                      </div>
+                      <span className="text-white/60 text-xs font-medium uppercase tracking-wider">{t('inhabitants_fish') || 'Pesci'}</span>
+                      <p className="text-3xl font-bold text-white mt-1">
+                        {inhabitants.fish.reduce((acc, f) => acc + (f.quantity || 1), 0)}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div key="chart" 
-                className={`bg-white/5 border border-white/10 rounded-2xl p-3 md:p-4 flex flex-col min-w-[150px] relative group overflow-hidden transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] z-20 animate-wiggle' : ''}`}
+                className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
                 {...chartLongPress}
               >
-                 {isEditMode && (
-                  <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
-                    <GripVertical size={20} />
-                  </div>
-                 )}
-                 <h2 className="text-lg md:text-xl font-bold mb-2 text-white/90 px-2 pt-1">{t('chart_title')}</h2>
-                 <div className="flex-grow w-full h-full">
-                    <HistoryChart data={testLogs} />
-                 </div>
+                <div className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl p-3 md:p-4 flex flex-col min-w-[150px] transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}>
+                   {isEditMode && (
+                    <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
+                      <GripVertical size={20} />
+                    </div>
+                   )}
+                   <h2 className="text-lg md:text-xl font-bold mb-2 text-white/90 px-2 pt-1">{t('chart_title')}</h2>
+                   <div className="flex-grow w-full h-full">
+                      <HistoryChart data={testLogs} />
+                   </div>
+                </div>
               </div>
             </ResponsiveGridLayout>
           )}
