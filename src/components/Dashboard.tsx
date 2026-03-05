@@ -115,8 +115,22 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
 
   const [layouts, setLayouts] = usePersistentState('dashboardLayouts', defaultLayouts);
 
-  const onLayoutChange = (layout, newLayouts) => {
-    setLayouts(newLayouts);
+  // Dynamically inject 'static' property based on edit mode to strictly control draggability
+  const activeLayouts = Object.keys(layouts).reduce((acc: any, breakpoint) => {
+    acc[breakpoint] = layouts[breakpoint].map((item: any) => ({
+      ...item,
+      static: !isEditMode
+    }));
+    return acc;
+  }, {});
+
+  const onLayoutChange = (layout: any, newLayouts: any) => {
+    // We strip the 'static' property before saving to keep the persistent state clean
+    const cleanLayouts = Object.keys(newLayouts).reduce((acc: any, breakpoint) => {
+      acc[breakpoint] = newLayouts[breakpoint].map(({ static: _, ...item }: any) => item);
+      return acc;
+    }, {});
+    setLayouts(cleanLayouts);
   };
 
   const latestLog = testLogs?.[0] || {};
@@ -125,8 +139,38 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
   const ResponsiveGridLayout = Responsive as any;
 
   const handleLongPress = () => {
-    setIsEditMode(true);
+    if (!isEditMode) {
+      setIsEditMode(true);
+      if (navigator.vibrate) navigator.vibrate(50);
+    }
   };
+
+  // Helper for items that aren't StatCards (Health and Chart)
+  const useLongPressLogic = () => {
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    
+    const start = () => {
+      if (isEditMode) return;
+      timerRef.current = setTimeout(handleLongPress, 800);
+    };
+    
+    const stop = () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+    
+    return {
+      onPointerDown: start,
+      onPointerUp: stop,
+      onPointerLeave: stop,
+      onPointerCancel: stop
+    };
+  };
+
+  const healthLongPress = useLongPressLogic();
+  const chartLongPress = useLongPressLogic();
 
   return (
     <>
@@ -136,7 +180,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
           {isEditMode && (
             <button 
               onClick={() => setIsEditMode(false)}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-full font-bold shadow-lg shadow-emerald-500/20 transition-all animate-bounce-in"
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-full font-bold shadow-lg shadow-emerald-500/20 transition-all animate-bounce-in z-50"
             >
               {t('common_done') || 'Fine'}
             </button>
@@ -147,7 +191,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
           {gridWidth > 0 && (
             <ResponsiveGridLayout 
               className="layout"
-              layouts={layouts}
+              layouts={activeLayouts}
               onLayoutChange={onLayoutChange}
               breakpoints={{lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0}}
               cols={{lg: 12, md: 12, sm: 6, xs: 6, xxs: 6}}
@@ -161,7 +205,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
             >
               <div key="health" 
                 className={`bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center min-w-[150px] relative group overflow-hidden ${isEditMode ? 'animate-wiggle ring-2 ring-emerald-500/50' : ''}`}
-                onPointerDown={() => !isEditMode && setTimeout(() => setIsEditMode(true), 800)}
+                {...healthLongPress}
               >
                 {isEditMode && (
                   <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
@@ -219,7 +263,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
               </div>
               <div key="chart" 
                 className={`bg-white/5 border border-white/10 rounded-2xl p-3 md:p-4 flex flex-col min-w-[150px] relative group overflow-hidden ${isEditMode ? 'animate-wiggle ring-2 ring-emerald-500/50' : ''}`}
-                onPointerDown={() => !isEditMode && setTimeout(() => setIsEditMode(true), 800)}
+                {...chartLongPress}
               >
                  {isEditMode && (
                   <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
