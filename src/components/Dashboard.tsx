@@ -109,7 +109,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
       { i: 'temp', x: 0, y: 5, w: 6, h: 1, minW: 6, minH: 1 },
       { i: 'ph', x: 0, y: 6, w: 6, h: 1, minW: 6, minH: 1 },
       { i: 'inhabitants', x: 0, y: 7, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'chart', x: 0, y: 9, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'chart', x: 0, y: 9, w: 6, h: 3, minW: 6, minH: 2 },
     ]
   };
 
@@ -173,12 +173,12 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
   return (
     <>
       <div className="p-6 text-white animate-fade-in">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">{t('dashboard_title')}</h1>
+        <div className="flex justify-between items-center mb-6 px-4 sm:px-0">
+          <h1 className="text-2xl sm:text-3xl font-bold">{t('dashboard_title')}</h1>
           {isEditMode && (
             <button 
               onClick={() => setIsEditMode(false)}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-full font-bold shadow-lg shadow-emerald-500/20 transition-all animate-bounce-in z-50"
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-full font-bold shadow-lg shadow-emerald-500/20 transition-all animate-bounce-in z-50 active:scale-95"
             >
               {t('common_save') || 'Fine'}
             </button>
@@ -201,13 +201,13 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
               isResizable={isEditMode}
               preventCollision={false}
               compactType="vertical"
-              margin={[24, 24]}
-              margins={{
+              margin={[16, 16]}
+              containerPadding={{
                 lg: [24, 24],
                 md: [24, 24],
-                sm: [24, 24],
-                xs: [24, 24],
-                xxs: [24, 24]
+                sm: [16, 16],
+                xs: [16, 16],
+                xxs: [12, 12]
               }}
               useCSSTransforms={true}
             >

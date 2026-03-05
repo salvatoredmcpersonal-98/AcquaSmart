@@ -96,15 +96,15 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
         className="relative bg-zinc-900 border border-white/10 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
       >
-        <div className="p-6">
+        <div className="p-5 sm:p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
               <Fish className="text-emerald-400" />
               {t('inhabitants_title') || 'Abitanti'}
             </h2>
             <button 
               onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white"
+              className="p-2.5 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white active:bg-white/20"
             >
               <X size={24} />
             </button>
@@ -113,7 +113,7 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
           <div className="flex bg-white/5 p-1 rounded-xl mb-6">
             <button
               onClick={() => setActiveTab('fish')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all active:scale-[0.98] ${
                 activeTab === 'fish' ? 'bg-emerald-500 text-white shadow-lg' : 'text-white/60 hover:text-white'
               }`}
             >
@@ -122,7 +122,7 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
             </button>
             <button
               onClick={() => setActiveTab('plants')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all active:scale-[0.98] ${
                 activeTab === 'plants' ? 'bg-emerald-500 text-white shadow-lg' : 'text-white/60 hover:text-white'
               }`}
             >
@@ -134,7 +134,7 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
           <div className="mb-6">
             <button 
               onClick={() => setShowGallery(true)}
-              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-2xl transition-all shadow-lg shadow-emerald-500/20 flex flex-col items-center justify-center gap-1 font-bold active:scale-[0.98]"
+              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-5 rounded-2xl transition-all shadow-lg shadow-emerald-500/20 flex flex-col items-center justify-center gap-1 font-bold active:scale-[0.97]"
             >
               <div className="flex items-center gap-2">
                 <Plus size={24} />
@@ -144,7 +144,7 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
             </button>
           </div>
 
-          <div className="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="max-h-[350px] overflow-y-auto pr-1 -mr-1 custom-scrollbar touch-pan-y">
             <AnimatePresence mode="popLayout">
               {inhabitants[activeTab].length === 0 ? (
                 <motion.p 
@@ -204,23 +204,23 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
               className="absolute inset-0 bg-black/80 backdrop-blur-md"
             />
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative bg-zinc-900 border border-white/10 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-zinc-900 border border-white/10 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col h-full max-h-[90vh] sm:max-h-[80vh]"
             >
-              <div className="p-6 border-b border-white/10 flex flex-col gap-4">
+              <div className="p-5 sm:p-6 border-b border-white/10 flex flex-col gap-4">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                       <Grid className="text-emerald-400" />
                       {activeTab === 'fish' ? t('fish_catalog') || 'Catalogo Pesci' : t('plants_catalog') || 'Catalogo Piante'}
                     </h3>
-                    <p className="text-white/40 text-xs mt-1">{t('catalog_subtitle') || 'Seleziona quantità e aggiungi al tuo acquario'}</p>
+                    <p className="text-white/40 text-[10px] sm:text-xs mt-1">{t('catalog_subtitle') || 'Seleziona quantità e aggiungi al tuo acquario'}</p>
                   </div>
                   <button 
                     onClick={() => setShowGallery(false)}
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white"
+                    className="p-2.5 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white active:bg-white/20"
                   >
                     <X size={24} />
                   </button>
@@ -232,13 +232,13 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={t('search_catalog_placeholder') || 'Cerca nel catalogo...'}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm sm:text-base"
                   />
                   <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
                 </div>
               </div>
               
-              <div className="p-6 overflow-y-auto custom-scrollbar">
+              <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar touch-pan-y">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filteredSuggestions.map((s, i) => (
                     <motion.div
@@ -256,14 +256,14 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
                           <span className="text-emerald-400 font-bold text-xs">€{s.price.toFixed(2)}</span>
                         </div>
                       </div>
-                      <div className="p-4 flex flex-col gap-3">
+                      <div className="p-4 flex flex-col gap-4">
                         <h4 className="text-white font-bold text-base truncate">{s.name}</h4>
                         
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center bg-white/5 rounded-xl border border-white/10 p-1">
                             <button 
                               onClick={() => updateQuantity(s.name, -1)}
-                              className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                              className="w-10 h-10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors active:bg-white/20"
                             >
                               -
                             </button>
@@ -272,7 +272,7 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
                             </span>
                             <button 
                               onClick={() => updateQuantity(s.name, 1)}
-                              className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                              className="w-10 h-10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors active:bg-white/20"
                             >
                               +
                             </button>
@@ -280,7 +280,7 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
                           
                           <button
                             onClick={() => handleAddItem(s)}
-                            className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-2 rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 font-bold text-sm active:scale-95"
+                            className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 font-bold text-sm active:scale-95"
                           >
                             <Plus size={16} />
                             {t('add_button') || 'Aggiungi'}
