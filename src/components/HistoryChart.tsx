@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useLocale } from '../context/LocaleContext';
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
     const { t } = useTranslation();
     const { formatTemperature } = useLocale();
 
@@ -62,18 +62,32 @@ export default function HistoryChart({ data }) {
     const hasNitratesData = hasData('nitrates');
 
     return (
-        <div className="h-80 bg-white/5 border border-white/10 rounded-2xl p-4">
+        <div className="w-full h-full">
             <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={formattedData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
-                    <XAxis dataKey="date" stroke="rgba(255, 255, 255, 0.5)" />
-                    <YAxis stroke="rgba(255, 255, 255, 0.5)" />
+                <LineChart data={formattedData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" vertical={false} />
+                    <XAxis 
+                        dataKey="date" 
+                        stroke="rgba(255, 255, 255, 0.5)" 
+                        fontSize={10}
+                        tickLine={false}
+                        axisLine={false}
+                    />
+                    <YAxis 
+                        stroke="rgba(255, 255, 255, 0.5)" 
+                        fontSize={10}
+                        tickLine={false}
+                        axisLine={false}
+                    />
                     <Tooltip content={<CustomTooltip />} />
-                    <Legend wrapperStyle={{ color: '#fff' }} />
+                    <Legend 
+                        wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} 
+                        iconType="circle"
+                    />
                     
-                    {hasPhData && <Line connectNulls type="monotone" dataKey="ph" name="pH" stroke="#38bdf8" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />}
-                    {hasTempData && <Line connectNulls type="monotone" dataKey="temp" name={t('log_test_temp')} stroke="#f87171" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />}
-                    {hasNitratesData && <Line connectNulls type="monotone" dataKey="nitrates" name={t('log_test_nitrates')} stroke="#fbbf24" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />}
+                    {hasPhData && <Line connectNulls type="monotone" dataKey="ph" name="pH" stroke="#38bdf8" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />}
+                    {hasTempData && <Line connectNulls type="monotone" dataKey="temp" name={t('log_test_temp')} stroke="#f87171" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />}
+                    {hasNitratesData && <Line connectNulls type="monotone" dataKey="nitrates" name={t('log_test_nitrates')} stroke="#fbbf24" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />}
                 </LineChart>
             </ResponsiveContainer>
         </div>
