@@ -37,9 +37,20 @@ export default function App() {
       { id: 18, name: 'Water Wisteria', quantity: 2, price: 5.0 },
       { id: 19, name: 'Bacopa Caroliniana', quantity: 4, price: 4.0 },
       { id: 20, name: 'Ludwigia Repens', quantity: 3, price: 5.0 }
+    ],
+    hardscape: [
+      { id: 21, name: 'ADA Amazonia Ver.2 (9L)', quantity: 1, price: 45.0 },
+      { id: 22, name: 'Seiryu Stone (Set 10kg)', quantity: 1, price: 40.0 },
+      { id: 23, name: 'Radice Red Moor (M)', quantity: 1, price: 15.0 }
     ]
   };
-  const [inhabitants, setInhabitants] = usePersistentState('userInhabitants_v3', initialInhabitants);
+  const [inhabitants, setInhabitants] = usePersistentState('userInhabitants_v4', initialInhabitants);
+  const [accessories, setAccessories] = usePersistentState('userAccessories_v1', []);
+  const [reminders, setReminders] = usePersistentState('userReminders_v1', [
+    { id: 1, task: 'Cambio Acqua', lastDone: new Date().toISOString(), frequency: 7, nextDue: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 2, task: 'Pulizia Filtro', lastDone: new Date().toISOString(), frequency: 30, nextDue: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 3, task: 'Fertilizzazione', lastDone: new Date().toISOString(), frequency: 3, nextDue: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() }
+  ]);
   const trialState = useTrial();
 
   const handleLogin = () => {
@@ -51,7 +62,7 @@ export default function App() {
     setIsAuthenticated(false);
     setTanks([]); // This will also clear it from localStorage via the hook
     setTestLogs([]);
-    setInhabitants({ fish: [], plants: [] });
+    setInhabitants({ fish: [], plants: [], hardscape: [] });
   };
 
   const handleTankAdded = (newTank) => {
@@ -91,6 +102,14 @@ export default function App() {
     setInhabitants(newInhabitants);
   };
 
+  const onUpdateReminders = (newReminders) => {
+    setReminders(newReminders);
+  };
+
+  const onUpdateAccessories = (newAccessories) => {
+    setAccessories(newAccessories);
+  };
+
   const renderPage = () => {
     switch (currentPage) {
       case 'settings':
@@ -104,6 +123,11 @@ export default function App() {
           onResetHistory={onResetHistory}
           inhabitants={inhabitants}
           onUpdateInhabitants={onUpdateInhabitants}
+          reminders={reminders}
+          onUpdateReminders={onUpdateReminders}
+          accessories={accessories}
+          onUpdateAccessories={onUpdateAccessories}
+          tanks={tanks}
         />;
     }
   };

@@ -30,6 +30,7 @@ export default function LogTestModal({ parameter, testLogs, onClose, onLogTest, 
         temp: { title: t('log_temp_title'), label: t('log_test_temp'), unit: locale.temperature.label, formatter: formatTemperature },
         ph: { title: t('log_ph_title'), label: 'pH', unit: '', formatter: (val) => val?.toFixed(1) },
         nitrates: { title: t('log_nitrates_title'), label: t('log_test_nitrates'), unit: 'mg/L', formatter: (val) => val ? `${val} mg/L` : '' },
+        kh: { title: t('log_kh_title'), label: 'KH', unit: '°dKH', formatter: (val) => val ? `${val} °dKH` : '' },
     };
 
     const config = paramConfig[parameter];

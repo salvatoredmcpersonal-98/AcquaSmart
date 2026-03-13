@@ -1,48 +1,59 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Plus, Trash2, Fish, Leaf, Search, DollarSign, Grid, Info } from 'lucide-react';
+import { X, Plus, Trash2, Fish, Leaf, Search, DollarSign, Grid, Info, Box } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { HARDSCAPE_SUGGESTIONS } from '../constants/filters';
 
 const SUGGESTIONS = {
   fish: [
-    { name: 'Neon Tetra', price: 1.5, image: 'https://picsum.photos/seed/neontetra/300/200' },
-    { name: 'Guppy', price: 2.5, image: 'https://picsum.photos/seed/guppy/300/200' },
-    { name: 'Molly', price: 3.0, image: 'https://picsum.photos/seed/molly/300/200' },
-    { name: 'Platy', price: 2.5, image: 'https://picsum.photos/seed/platy/300/200' },
-    { name: 'Corydoras', price: 4.5, image: 'https://picsum.photos/seed/corydoras/300/200' },
-    { name: 'Angelfish', price: 8.0, image: 'https://picsum.photos/seed/angelfish/300/200' },
-    { name: 'Betta Splendens', price: 12.0, image: 'https://picsum.photos/seed/betta/300/200' },
-    { name: 'Zebra Danio', price: 1.5, image: 'https://picsum.photos/seed/zebradanio/300/200' },
-    { name: 'Cherry Barb', price: 2.0, image: 'https://picsum.photos/seed/cherrybarb/300/200' },
-    { name: 'Dwarf Gourami', price: 6.0, image: 'https://picsum.photos/seed/dwarfgourami/300/200' },
-    { name: 'Discus', price: 45.0, image: 'https://picsum.photos/seed/discus/300/200' },
-    { name: 'Cardinal Tetra', price: 2.0, image: 'https://picsum.photos/seed/cardinaltetra/300/200' },
-    { name: 'Rummy Nose Tetra', price: 3.5, image: 'https://picsum.photos/seed/rummynose/300/200' },
-    { name: 'Otocinclus', price: 4.0, image: 'https://picsum.photos/seed/otocinclus/300/200' },
-    { name: 'Bristlenose Pleco', price: 7.0, image: 'https://picsum.photos/seed/pleco/300/200' }
+    { name: 'Neon (P. innesi)', price: 1.5, image: 'https://res.cloudinary.com/dtprzblbm/image/upload/v1772709529/Il-pesce-neon-Paracheiridon-Innesi_wb2cbe.jpg' },
+    { name: 'Cardinali (P. axelrodi)', price: 2.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/fish_cardinal_tetra' },
+    { name: 'Scalare', price: 8.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/fish_angelfish' },
+    { name: 'Discus', price: 45.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/fish_discus' },
+    { name: 'Ramirezi', price: 12.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/fish_ramirezi' },
+    { name: 'Corydoras (Tutti)', price: 4.5, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/fish_corydoras' },
+    { name: 'Ancistrus', price: 7.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/fish_pleco' },
+    { name: 'Otocinclus', price: 4.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/fish_otocinclus' },
+    { name: 'Guppy', price: 2.5, image: 'https://res.cloudinary.com/dtprzblbm/image/upload/v1772709324/images_yn2plm.webp' },
+    { name: 'Platy/Portaspada', price: 2.5, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/fish_platy' },
+    { name: 'Molly (Black/Balloon)', price: 3.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/fish_molly' },
+    { name: 'Betta Splendens', price: 12.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/fish_betta' },
+    { name: 'Trichogaster (Gourami)', price: 6.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/fish_dwarf_gourami' },
+    { name: 'Rasbora Heteromorpha', price: 2.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/fish_cherry_barb' },
+    { name: 'Danio Rerio (Zebra)', price: 1.5, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/fish_zebra_danio' },
+    { name: 'Ciclidi Malawi (Mbuma)', price: 15.0, image: 'https://picsum.photos/seed/malawi/300/200' },
+    { name: 'Ciclidi Tanganica', price: 18.0, image: 'https://picsum.photos/seed/tanganica/300/200' },
+    { name: 'Caridina (Red Cherry)', price: 3.0, image: 'https://picsum.photos/seed/shrimp_red/300/200' },
+    { name: 'Caridina (Japonica)', price: 5.0, image: 'https://picsum.photos/seed/shrimp_amano/300/200' }
   ],
   plants: [
-    { name: 'Anubias', price: 8.0, image: 'https://picsum.photos/seed/anubias/300/200' },
-    { name: 'Java Fern', price: 7.0, image: 'https://picsum.photos/seed/javafern/300/200' },
-    { name: 'Amazon Sword', price: 6.0, image: 'https://picsum.photos/seed/amazonsword/300/200' },
-    { name: 'Vallisneria', price: 4.0, image: 'https://picsum.photos/seed/vallisneria/300/200' },
-    { name: 'Cryptocoryne', price: 5.0, image: 'https://picsum.photos/seed/crypt/300/200' },
-    { name: 'Java Moss', price: 6.0, image: 'https://picsum.photos/seed/javamoss/300/200' },
-    { name: 'Hornwort', price: 3.0, image: 'https://picsum.photos/seed/hornwort/300/200' },
-    { name: 'Water Wisteria', price: 5.0, image: 'https://picsum.photos/seed/wisteria/300/200' },
-    { name: 'Bacopa Caroliniana', price: 4.0, image: 'https://picsum.photos/seed/bacopa/300/200' },
-    { name: 'Ludwigia Repens', price: 5.0, image: 'https://picsum.photos/seed/ludwigia/300/200' },
-    { name: 'Monte Carlo', price: 7.0, image: 'https://picsum.photos/seed/montecarlo/300/200' },
-    { name: 'Dwarf Hairgrass', price: 6.0, image: 'https://picsum.photos/seed/hairgrass/300/200' }
+    { name: 'Anubias', price: 8.0, image: 'https://res.cloudinary.com/dtprzblbm/image/upload/v1772710024/Anubias_h7mosc.webp' },
+    { name: 'Java Fern', price: 7.0, image: 'https://res.cloudinary.com/dtprzblbm/image/upload/v1772710180/microsorum-pteropus_ntpz0g.webp' },
+    { name: 'Amazon Sword', price: 6.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/plant_amazon_sword' },
+    { name: 'Vallisneria', price: 4.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/plant_vallisneria' },
+    { name: 'Cryptocoryne', price: 5.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/plant_crypt' },
+    { name: 'Java Moss', price: 6.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/plant_java_moss' },
+    { name: 'Hornwort', price: 3.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/plant_hornwort' },
+    { name: 'Water Wisteria', price: 5.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/plant_wisteria' },
+    { name: 'Bacopa Caroliniana', price: 4.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/plant_bacopa' },
+    { name: 'Ludwigia Repens', price: 5.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/plant_ludwigia' },
+    { name: 'Monte Carlo', price: 7.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/plant_monte_carlo' },
+    { name: 'Dwarf Hairgrass', price: 6.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/plant_hairgrass' }
+  ],
+  hardscape: [
+    ...HARDSCAPE_SUGGESTIONS.substrates.map(s => ({ name: s.model, price: s.minPrice, image: 'https://picsum.photos/seed/substrate/300/200' })),
+    ...HARDSCAPE_SUGGESTIONS.woods.map(s => ({ name: s.model, price: s.minPrice, image: 'https://picsum.photos/seed/wood/300/200' })),
+    ...HARDSCAPE_SUGGESTIONS.rocks.map(s => ({ name: s.model, price: s.minPrice, image: 'https://picsum.photos/seed/rock/300/200' }))
   ]
 };
 
 export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'fish' | 'plants'>('fish');
+  const [activeTab, setActiveTab] = useState<'fish' | 'plants' | 'hardscape'>('fish');
   const [showGallery, setShowGallery] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [itemQuantities, setItemQuantities] = useState<Record<string, number>>({});
+  const [itemSexes, setItemSexes] = useState<Record<string, 'M' | 'F' | 'N/A'>>({});
 
   const filteredSuggestions = useMemo(() => {
     const suggestions = SUGGESTIONS[activeTab];
@@ -54,17 +65,27 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
 
   const handleAddItem = (suggestion: { name: string, price: number }) => {
     const quantity = itemQuantities[suggestion.name] || 1;
+    const sex = activeTab === 'fish' ? (itemSexes[suggestion.name] || 'N/A') : 'N/A';
     const updated = { ...inhabitants };
     updated[activeTab] = [...updated[activeTab], { 
       id: Date.now(), 
       name: suggestion.name, 
       quantity,
-      price: suggestion.price
+      price: suggestion.price,
+      sex
     }];
     onUpdate(updated);
     
-    // Reset quantity for this item
+    // Reset state for this item
     setItemQuantities(prev => ({ ...prev, [suggestion.name]: 1 }));
+    setItemSexes(prev => ({ ...prev, [suggestion.name]: 'N/A' }));
+  };
+
+  const updateSex = (name: string, sex: 'M' | 'F' | 'N/A') => {
+    setItemSexes(prev => ({
+      ...prev,
+      [name]: sex
+    }));
   };
 
   const updateQuantity = (name: string, delta: number) => {
@@ -100,7 +121,7 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
               <Fish className="text-emerald-400" />
-              {t('inhabitants_title') || 'Abitanti'}
+              Allestimento Acquario
             </h2>
             <button 
               onClick={onClose}
@@ -110,25 +131,39 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
             </button>
           </div>
 
-          <div className="flex bg-white/5 p-1 rounded-xl mb-6">
-            <button
-              onClick={() => setActiveTab('fish')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all active:scale-[0.98] ${
-                activeTab === 'fish' ? 'bg-emerald-500 text-white shadow-lg' : 'text-white/60 hover:text-white'
-              }`}
-            >
-              <Fish size={18} />
-              {t('inhabitants_fish') || 'Pesci'}
-            </button>
-            <button
-              onClick={() => setActiveTab('plants')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all active:scale-[0.98] ${
-                activeTab === 'plants' ? 'bg-emerald-500 text-white shadow-lg' : 'text-white/60 hover:text-white'
-              }`}
-            >
-              <Leaf size={18} />
-              {t('inhabitants_plants') || 'Piante'}
-            </button>
+          <div className="flex flex-col gap-2 mb-6">
+            <div className="flex bg-white/5 p-1 rounded-xl">
+              <button
+                onClick={() => setActiveTab('fish')}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all active:scale-[0.98] ${
+                  activeTab === 'fish' ? 'bg-emerald-500 text-white shadow-lg' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                <Fish size={18} />
+                {t('inhabitants_fish') || 'Pesci'}
+              </button>
+              <button
+                onClick={() => setActiveTab('plants')}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all active:scale-[0.98] ${
+                  activeTab === 'plants' ? 'bg-emerald-500 text-white shadow-lg' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                <Leaf size={18} />
+                {t('inhabitants_plants') || 'Piante'}
+              </button>
+            </div>
+            
+            <div className="flex bg-white/5 p-1 rounded-xl">
+              <button
+                onClick={() => setActiveTab('hardscape')}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all active:scale-[0.98] ${
+                  activeTab === 'hardscape' ? 'bg-emerald-500 text-white shadow-lg' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                <Box size={18} />
+                Base e Hardscape
+              </button>
+            </div>
           </div>
 
           <div className="mb-6">
@@ -169,7 +204,16 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
                           {item.quantity}x
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-white font-medium">{item.name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-medium">{item.name}</span>
+                            {item.sex && item.sex !== 'N/A' && (
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold ${
+                                item.sex === 'M' ? 'bg-blue-500/20 text-blue-400' : 'bg-pink-500/20 text-pink-400'
+                              }`}>
+                                {item.sex}
+                              </span>
+                            )}
+                          </div>
                           {item.price > 0 && (
                             <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">
                               €{(item.price * item.quantity).toFixed(2)} total
@@ -214,7 +258,9 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
                   <div>
                     <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                       <Grid className="text-emerald-400" />
-                      {activeTab === 'fish' ? t('fish_catalog') || 'Catalogo Pesci' : t('plants_catalog') || 'Catalogo Piante'}
+                      {activeTab === 'fish' ? t('fish_catalog') || 'Catalogo Pesci' : 
+                       activeTab === 'plants' ? t('plants_catalog') || 'Catalogo Piante' : 
+                       t('hardscape_catalog') || 'Catalogo Hardscape'}
                     </h3>
                     <p className="text-white/40 text-[10px] sm:text-xs mt-1">{t('catalog_subtitle') || 'Seleziona quantità e aggiungi al tuo acquario'}</p>
                   </div>
@@ -259,6 +305,27 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
                       <div className="p-4 flex flex-col gap-4">
                         <h4 className="text-white font-bold text-base truncate">{s.name}</h4>
                         
+                        {activeTab === 'fish' && (
+                          <div className="flex flex-col gap-2">
+                            <p className="text-[10px] uppercase font-bold text-white/40">Sesso:</p>
+                            <div className="flex gap-2">
+                              {['M', 'F', 'N/A'].map((sex) => (
+                                <button
+                                  key={sex}
+                                  onClick={() => updateSex(s.name, sex as any)}
+                                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                                    (itemSexes[s.name] || 'N/A') === sex 
+                                      ? 'bg-emerald-500 text-white shadow-lg' 
+                                      : 'bg-white/5 text-white/40 hover:text-white/60'
+                                  }`}
+                                >
+                                  {sex === 'N/A' ? 'Indefinito' : sex === 'M' ? 'Maschio' : 'Femmina'}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center bg-white/5 rounded-xl border border-white/10 p-1">
                             <button 
