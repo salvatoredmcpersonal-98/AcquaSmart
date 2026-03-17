@@ -1,20 +1,55 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+import { useRef, useCallback } from 'react';
 
-# Run and deploy your AI Studio app
+export default function useLongPress(callback: () => void, ms = 700) {
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const startPosRef = useRef<{ x: number, y: number } | null>(null);
+  const isLongPressTriggered = useRef(false);
 
-This contains everything you need to run your app locally.
+  const start = useCallback((e: any) => {
+    isLongPressTriggered.current = false;
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    
+    startPosRef.current = { x: clientX, y: clientY };
 
-View your app in AI Studio: https://ai.studio/apps/b0844bf3-9a99-4ee5-92b7-fee4e141c593
+    timerRef.current = setTimeout(() => {
+      isLongPressTriggered.current = true;
+      callback();
+    }, ms);
+  }, [callback, ms]);
 
-## Run Locally
+  const stop = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    startPosRef.current = null;
+  }, []);
 
-**Prerequisites:**  Node.js
+  const move = useCallback((e: any) => {
+    if (!startPosRef.current || !timerRef.current) return;
+    
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    
+    const dx = Math.abs(clientX - startPosRef.current.x);
+    const dy = Math.abs(clientY - startPosRef.current.y);
+    
+    if (dx > 10 || dy > 10) {
+      stop();
+    }
+  }, [stop]);
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+  return {
+    onPointerDown: start,
+    onPointerMove: move,
+    onPointerUp: stop,
+    onPointerLeave: stop,
+    onPointerCancel: stop,
+    onContextMenu: (e: any) => {
+      if (isLongPressTriggered.current) {
+        e.preventDefault();
+      }
+    }
+  };
+}
