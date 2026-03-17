@@ -27,7 +27,7 @@ interface StatCardProps {
 }
 
 const StatCard = memo(({ icon, label, value, colorClass, onClick = undefined, isEditMode, centered = false }: StatCardProps) => {
-  const interactiveClasses = (onClick && isEditMode) ? "cursor-pointer hover:bg-white/10 transition-colors duration-200" : "";
+  const interactiveClasses = onClick ? "cursor-pointer hover:bg-white/10 transition-colors duration-200" : "";
 
   const content = (
     <div className={`flex flex-col h-full ${centered ? 'items-center justify-center text-center' : 'justify-between text-left'}`}>
@@ -43,17 +43,15 @@ const StatCard = memo(({ icon, label, value, colorClass, onClick = undefined, is
 
   if (onClick) {
     return (
-      <button 
+      <motion.button 
         type="button"
-        onClick={(e) => {
-          if (!isEditMode) return;
-          e.stopPropagation();
+        onTap={(e) => {
           onClick();
         }}
-        className={`w-full h-full p-3 lg:p-4 flex flex-col outline-none border-none bg-transparent text-left appearance-none select-none z-10 ${interactiveClasses} ${isEditMode ? 'cursor-pointer' : 'cursor-default'}`}
+        className={`w-full h-full p-3 lg:p-4 flex flex-col outline-none border-none bg-transparent text-left appearance-none select-none z-10 ${interactiveClasses}`}
       >
         {content}
-      </button>
+      </motion.button>
     );
   }
 
@@ -304,15 +302,15 @@ export default function Dashboard({
     }
   }, [isEditMode]);
 
-  const healthLongPress = useLongPress(() => handleLongPress(() => setShowValidationModal(true)));
-  const tempLongPress = useLongPress(() => handleLongPress(() => setEditingParam('temp')));
-  const phLongPress = useLongPress(() => handleLongPress(() => setEditingParam('ph')));
-  const nitratesLongPress = useLongPress(() => handleLongPress(() => setEditingParam('nitrates')));
-  const khLongPress = useLongPress(() => handleLongPress(() => setEditingParam('kh')));
+  const healthLongPress = useLongPress(() => handleLongPress());
+  const tempLongPress = useLongPress(() => handleLongPress());
+  const phLongPress = useLongPress(() => handleLongPress());
+  const nitratesLongPress = useLongPress(() => handleLongPress());
+  const khLongPress = useLongPress(() => handleLongPress());
   const inventoryLongPress = useLongPress(() => handleLongPress());
-  const inhabitantsLongPress = useLongPress(() => handleLongPress(() => setShowInhabitantsModal(true)));
-  const remindersLongPress = useLongPress(() => handleLongPress(() => setShowRemindersModal(true)));
-  const accessoriesLongPress = useLongPress(() => handleLongPress(() => setShowAccessoriesModal(true)));
+  const inhabitantsLongPress = useLongPress(() => handleLongPress());
+  const remindersLongPress = useLongPress(() => handleLongPress());
+  const accessoriesLongPress = useLongPress(() => handleLongPress());
 
   const overdueReminders = useMemo(() => {
     return reminders.filter(r => new Date(r.nextDue) < new Date()).length;
@@ -381,8 +379,8 @@ export default function Dashboard({
                 x: { type: "spring", stiffness: 400, damping: 40, mass: 0.8 },
                 opacity: { duration: 0.15 }
               }}
-              className="col-start-1 row-start-1 text-white touch-none relative z-10 w-full"
-              drag="x"
+              className="col-start-1 row-start-1 text-white touch-pan-y relative z-10 w-full"
+              drag={isEditMode ? false : "x"}
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.2}
               style={{ x: dragX }}
@@ -530,11 +528,11 @@ export default function Dashboard({
                 className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
                 {...healthLongPress}
               >
-                <div 
+                <motion.div 
                   role="button"
                   tabIndex={0}
-                  onClick={() => isEditMode && setShowValidationModal(true)}
-                  className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center min-w-[150px] transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : 'cursor-pointer hover:bg-white/10'}`}
+                  onTap={() => setShowValidationModal(true)}
+                  className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center min-w-[150px] transition-all duration-200 cursor-pointer hover:bg-white/10 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}
                 >
                   {isEditMode && (
                     <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
@@ -560,7 +558,7 @@ export default function Dashboard({
                       </ul>
                     </div>
                   )}
-                </div>
+                </motion.div>
               </div>
               
               <div key="temp" 
@@ -578,7 +576,7 @@ export default function Dashboard({
                     label={t('log_test_temp')} 
                     value={latestLog.temp ? formatTemperature(latestLog.temp) : '--'} 
                     colorClass="bg-red-500/20" 
-                    onClick={() => isEditMode && setEditingParam('temp')}
+                    onClick={() => setEditingParam('temp')}
                     isEditMode={isEditMode}
                   />
                 </div>
@@ -599,7 +597,7 @@ export default function Dashboard({
                     label="pH" 
                     value={latestLog.ph || '--'} 
                     colorClass="bg-sky-500/20" 
-                    onClick={() => isEditMode && setEditingParam('ph')}
+                    onClick={() => setEditingParam('ph')}
                     isEditMode={isEditMode}
                   />
                 </div>
@@ -620,7 +618,7 @@ export default function Dashboard({
                     label={t('log_test_nitrates')} 
                     value={latestLog.nitrates ? `${latestLog.nitrates} mg/L` : '--'} 
                     colorClass="bg-amber-500/20" 
-                    onClick={() => isEditMode && setEditingParam('nitrates')}
+                    onClick={() => setEditingParam('nitrates')}
                     isEditMode={isEditMode}
                   />
                 </div>
@@ -641,7 +639,7 @@ export default function Dashboard({
                     label={t('log_test_kh')} 
                     value={latestLog.kh ? `${latestLog.kh} °dKH` : '--'} 
                     colorClass="bg-indigo-500/20" 
-                    onClick={() => isEditMode && setEditingParam('kh')}
+                    onClick={() => setEditingParam('kh')}
                     isEditMode={isEditMode}
                   />
                 </div>
@@ -677,11 +675,11 @@ export default function Dashboard({
                       <GripVertical size={20} />
                     </div>
                   )}
-                  <div 
+                  <motion.div 
                     role="button"
                     tabIndex={0}
-                    onClick={() => isEditMode && setShowInhabitantsModal(true)}
-                    className={`w-full h-full p-4 flex items-center justify-around ${!isEditMode ? 'cursor-pointer hover:bg-white/10' : ''} transition-colors duration-200`}
+                    onTap={() => setShowInhabitantsModal(true)}
+                    className={`w-full h-full p-4 flex items-center justify-around cursor-pointer hover:bg-white/10 transition-colors duration-200`}
                   >
                     {/* Plants Section */}
                     <div className="flex flex-col items-center text-center">
@@ -721,7 +719,7 @@ export default function Dashboard({
                         {inhabitants.hardscape?.reduce((acc, h) => acc + (h.quantity || 1), 0) || 0}
                       </p>
                     </div>
-                  </div>
+                  </motion.div>
                 </div>
               </div>
 
@@ -747,7 +745,7 @@ export default function Dashboard({
                       </span>
                     ) : 'Nessuno'} 
                     colorClass={overdueReminders > 0 ? "bg-red-500/20" : "bg-emerald-500/20"} 
-                    onClick={() => isEditMode && setShowRemindersModal(true)}
+                    onClick={() => setShowRemindersModal(true)}
                     isEditMode={isEditMode}
                   />
                   {overdueReminders > 0 && !isEditMode && (
@@ -775,7 +773,7 @@ export default function Dashboard({
                     label="Accessori" 
                     value={accessories.length > 0 ? `${accessories.length} Elementi` : 'Nessuno'} 
                     colorClass="bg-indigo-500/20" 
-                    onClick={() => isEditMode && setShowAccessoriesModal(true)}
+                    onClick={() => setShowAccessoriesModal(true)}
                     isEditMode={isEditMode}
                   />
                 </div>
