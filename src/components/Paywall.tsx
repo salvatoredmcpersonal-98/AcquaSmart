@@ -9,11 +9,11 @@ export default function Paywall() {
   const subscriptionPrice = 2.99;
 
   const features = [
-    'Gestione Multi-vasca',
-    'Grafici AI Avanzati',
-    'Notifiche Predittive',
-    'Salvataggio Dati Illimitato',
-    'Supporto Prioritario'
+    t('paywall_feature_multitank'),
+    t('paywall_feature_charts'),
+    t('paywall_feature_notifications'),
+    t('paywall_feature_unlimited'),
+    t('paywall_feature_support')
   ];
 
   return (

@@ -53,5 +53,11 @@
   "inhabitants_add_fish": "Add fish...",
   "inhabitants_add_plant": "Add plant...",
   "inhabitants_empty": "No items added",
-  "add_button": "Add"
+  "add_button": "Add",
+  "paywall_feature_multitank": "Multi-tank Management",
+  "paywall_feature_charts": "Advanced AI Charts",
+  "paywall_feature_notifications": "Predictive Notifications",
+  "paywall_feature_unlimited": "Unlimited Data Storage",
+  "paywall_feature_support": "Priority Support",
+  "tank_name_duplicate_error": "An aquarium with this name already exists"
 }

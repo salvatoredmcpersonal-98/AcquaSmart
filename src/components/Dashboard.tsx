@@ -1,9 +1,10 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect, useLayoutEffect, memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DollarSign, Droplets, Thermometer, TestTube2, GripVertical, Fish, Leaf, Bell, AlertCircle, Lamp, Box, ShieldCheck, CheckCircle2, LayoutGrid } from 'lucide-react';
+import { DollarSign, Droplets, Thermometer, TestTube2, GripVertical, Fish, Leaf, Bell, AlertCircle, Lamp, Box, ShieldCheck, CheckCircle2, LayoutGrid, Plus, Activity } from 'lucide-react';
 import { useLocale } from '../context/LocaleContext';
 import usePersistentState from '../hooks/usePersistentState';
 import { useElementWidth } from '../hooks/useElementWidth';
+import useLongPress from '../hooks/useLongPress';
 import LogTestModal from './LogTestModal';
 import InhabitantsModal from './InhabitantsModal';
 import RemindersModal from './RemindersModal';
@@ -12,11 +13,21 @@ import ValidationReport from './ValidationReport';
 import HistoryChart from './HistoryChart';
 import { Responsive } from 'react-grid-layout';
 import { validateSetup, calculateHealthScore } from '../services/validationService';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { X } from 'lucide-react';
 
-const StatCard = ({ icon, label, value, colorClass, onClick = undefined, isEditMode, centered = false }) => {
-  const interactiveClasses = (onClick && !isEditMode) ? "cursor-pointer hover:bg-white/10 transition-colors duration-200" : "";
+interface StatCardProps {
+  icon: React.ReactNode;
+  label: React.ReactNode;
+  value: string | number | React.ReactNode;
+  colorClass: string;
+  onClick?: () => void;
+  isEditMode: boolean;
+  centered?: boolean;
+}
+
+const StatCard = memo(({ icon, label, value, colorClass, onClick = undefined, isEditMode, centered = false }: StatCardProps) => {
+  const interactiveClasses = (onClick && isEditMode) ? "cursor-pointer hover:bg-white/10 transition-colors duration-200" : "";
 
   const content = (
     <div className={`flex flex-col h-full ${centered ? 'items-center justify-center text-center' : 'justify-between text-left'}`}>
@@ -35,12 +46,11 @@ const StatCard = ({ icon, label, value, colorClass, onClick = undefined, isEditM
       <button 
         type="button"
         onClick={(e) => {
-          if (isEditMode) return;
-          // Don't prevent default here as it might interfere with touch lifecycle
+          if (!isEditMode) return;
           e.stopPropagation();
           onClick();
         }}
-        className={`w-full h-full p-3 lg:p-4 flex flex-col outline-none border-none bg-transparent text-left appearance-none select-none z-10 ${interactiveClasses} ${isEditMode ? 'cursor-default' : 'cursor-pointer'}`}
+        className={`w-full h-full p-3 lg:p-4 flex flex-col outline-none border-none bg-transparent text-left appearance-none select-none z-10 ${interactiveClasses} ${isEditMode ? 'cursor-pointer' : 'cursor-default'}`}
       >
         {content}
       </button>
@@ -52,80 +62,168 @@ const StatCard = ({ icon, label, value, colorClass, onClick = undefined, isEditM
       {content}
     </div>
   );
-};
+});
 
-export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, onResetHistory, inhabitants, onUpdateInhabitants, reminders, onUpdateReminders, accessories = [], onUpdateAccessories, tanks = [] }) {
+export default function Dashboard({ 
+  testLogs, 
+  onLogTest, 
+  handleDeleteTestLog, 
+  onResetHistory, 
+  inhabitants, 
+  onUpdateInhabitants, 
+  reminders, 
+  onUpdateReminders, 
+  accessories = [], 
+  onUpdateAccessories, 
+  tanks = [], 
+  currentTankIndex = 0,
+  onSetCurrentTankIndex,
+  onAddNewTank,
+  showRemindersInitial, 
+  onCloseRemindersInitial 
+}) {
   const { t } = useTranslation();
   const { formatCurrency, formatTemperature } = useLocale();
+  const [showTankSelector, setShowTankSelector] = useState(false);
   const [editingParam, setEditingParam] = useState(null);
   const [showInhabitantsModal, setShowInhabitantsModal] = useState(false);
   const [showRemindersModal, setShowRemindersModal] = useState(false);
+  const [remindersFilter, setRemindersFilter] = useState<'all' | 'overdue'>('all');
   const [showAccessoriesModal, setShowAccessoriesModal] = useState(false);
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const currentTank = tanks[0];
+  useEffect(() => {
+    if (showRemindersInitial) {
+      setRemindersFilter('overdue');
+      setShowRemindersModal(true);
+      onCloseRemindersInitial();
+    }
+  }, [showRemindersInitial, onCloseRemindersInitial]);
+
+  const currentTank = tanks[currentTankIndex] || tanks[0];
   const tankVolume = currentTank?.volume || 0;
-  const gridRef = useRef(null);
-  const gridWidth = useElementWidth(gridRef);
+  const [direction, setDirection] = useState(0);
+  const [isReady, setIsReady] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const gridWidth = useElementWidth(gridRef, [currentTankIndex]);
+
+  const dragX = useMotionValue(0);
+  const nextLabelOpacity = useTransform(dragX, [-100, 0], [1, 0]);
+  const prevLabelOpacity = useTransform(dragX, [0, 100], [0, 1]);
+  const labelScale = useTransform(dragX, [-100, 100], [1, 1]);
+
+  useEffect(() => {
+    dragX.set(0);
+    setIsReady(false);
+  }, [currentTankIndex, dragX]);
+
+  useEffect(() => {
+    if (gridWidth > 0) {
+      setIsReady(true);
+    }
+  }, [gridWidth]);
+
+  const handleDragEnd = useCallback((event: any, info: any) => {
+    const threshold = 100;
+    if (info.offset.x < -threshold) {
+      // Swipe Left (Next)
+      if (currentTankIndex < tanks.length - 1) {
+        dragX.set(0);
+        setDirection(1);
+        onSetCurrentTankIndex(currentTankIndex + 1);
+      } else {
+        dragX.set(0);
+        onAddNewTank();
+      }
+    } else if (info.offset.x > threshold) {
+      // Swipe Right (Previous)
+      if (currentTankIndex > 0) {
+        dragX.set(0);
+        setDirection(-1);
+        onSetCurrentTankIndex(currentTankIndex - 1);
+      } else {
+        dragX.set(0);
+      }
+    } else {
+      dragX.set(0);
+    }
+  }, [currentTankIndex, tanks.length, onSetCurrentTankIndex, onAddNewTank, dragX]);
+
+  const variants = {
+    enter: (direction: number) => ({
+      x: direction > 0 ? '100%' : (direction < 0 ? '-100%' : 0),
+      opacity: 0
+    }),
+    center: {
+      x: 0,
+      opacity: 1
+    },
+    exit: (direction: number) => ({
+      x: direction > 0 ? '-100%' : (direction < 0 ? '100%' : 0),
+      opacity: 0
+    })
+  };
 
   const defaultLayouts = {
     lg: [
       { i: 'health', x: 0, y: 0, w: 12, h: 4, minW: 4, minH: 3 },   
-      { i: 'inventory', x: 0, y: 3, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'nitrates', x: 4, y: 3, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'temp', x: 8, y: 3, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'ph', x: 0, y: 5, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'kh', x: 4, y: 5, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'accessories', x: 8, y: 5, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'reminders', x: 8, y: 5, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'inhabitants', x: 0, y: 7, w: 12, h: 2, minW: 4, minH: 2 },
+      { i: 'inventory', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'nitrates', x: 4, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'temp', x: 8, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'ph', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'kh', x: 4, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'accessories', x: 8, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'inhabitants', x: 0, y: 8, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'reminders', x: 6, y: 8, w: 6, h: 2, minW: 3, minH: 2 },
     ],
     md: [
       { i: 'health', x: 0, y: 0, w: 12, h: 4, minW: 4, minH: 2 },
-      { i: 'inventory', x: 0, y: 3, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'nitrates', x: 6, y: 3, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'temp', x: 0, y: 5, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'ph', x: 6, y: 5, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'kh', x: 0, y: 7, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'reminders', x: 6, y: 7, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'accessories', x: 6, y: 7, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'inhabitants', x: 0, y: 9, w: 12, h: 2, minW: 4, minH: 2 },
+      { i: 'inventory', x: 0, y: 4, w: 6, h: 2, minW: 3, minH: 2 },
+      { i: 'nitrates', x: 6, y: 4, w: 6, h: 2, minW: 3, minH: 2 },
+      { i: 'temp', x: 0, y: 6, w: 6, h: 2, minW: 3, minH: 2 },
+      { i: 'ph', x: 6, y: 6, w: 6, h: 2, minW: 3, minH: 2 },
+      { i: 'kh', x: 0, y: 8, w: 6, h: 2, minW: 3, minH: 2 },
+      { i: 'reminders', x: 6, y: 8, w: 6, h: 2, minW: 3, minH: 2 },
+      { i: 'accessories', x: 0, y: 10, w: 6, h: 2, minW: 3, minH: 2 },
+      { i: 'inhabitants', x: 6, y: 10, w: 6, h: 2, minW: 4, minH: 2 },
     ],
     sm: [
       { i: 'health', x: 0, y: 0, w: 6, h: 4, minW: 6, minH: 3 },
-      { i: 'inventory', x: 0, y: 3, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'nitrates', x: 0, y: 5, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'temp', x: 0, y: 7, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'ph', x: 0, y: 9, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'kh', x: 0, y: 11, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'reminders', x: 0, y: 13, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'accessories', x: 0, y: 13, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'inhabitants', x: 0, y: 15, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'inventory', x: 0, y: 4, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'nitrates', x: 0, y: 6, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'temp', x: 0, y: 8, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'ph', x: 0, y: 10, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'kh', x: 0, y: 12, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'reminders', x: 0, y: 14, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'accessories', x: 0, y: 16, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'inhabitants', x: 0, y: 18, w: 6, h: 2, minW: 4, minH: 2 },
     ],
     xs: [
       { i: 'health', x: 0, y: 0, w: 6, h: 4, minW: 6, minH: 3 },
-      { i: 'inventory', x: 0, y: 3, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'nitrates', x: 0, y: 5, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'temp', x: 0, y: 7, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'ph', x: 0, y: 9, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'reminders', x: 0, y: 11, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'accessories', x: 0, y: 9, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'inhabitants', x: 0, y: 15, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'inventory', x: 0, y: 4, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'nitrates', x: 0, y: 6, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'temp', x: 0, y: 8, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'ph', x: 0, y: 10, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'kh', x: 0, y: 12, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'reminders', x: 0, y: 14, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'accessories', x: 0, y: 16, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'inhabitants', x: 0, y: 18, w: 6, h: 2, minW: 6, minH: 2 },
     ],
     xxs: [
       { i: 'health', x: 0, y: 0, w: 6, h: 4, minW: 6, minH: 3 },
-      { i: 'inventory', x: 0, y: 3, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'nitrates', x: 0, y: 5, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'temp', x: 0, y: 7, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'ph', x: 0, y: 9, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'reminders',  x: 0, y: 9, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'accessories',  x: 0, y: 9, w: 6, h: 2, minW: 6, minH: 2 }, // modifica salvatore
-      { i: 'inhabitants', x: 0, y: 15, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'inventory', x: 0, y: 4, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'nitrates', x: 0, y: 6, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'temp', x: 0, y: 8, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'ph', x: 0, y: 10, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'kh', x: 0, y: 12, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'reminders',  x: 0, y: 14, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'accessories',  x: 0, y: 16, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'inhabitants', x: 0, y: 18, w: 6, h: 2, minW: 6, minH: 2 },
     ]
   };
 
-  const [layouts, setLayouts] = usePersistentState('dashboardLayouts_v5', defaultLayouts);
+  const [layouts, setLayouts] = usePersistentState(`dashboardLayouts_v7_${currentTank?.id || 'default'}`, defaultLayouts);
 
   const onLayoutChange = (layout: any, newLayouts: any) => {
     if (isEditMode) {
@@ -147,9 +245,9 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
   const latestLog = testLogs?.[0] || {};
   
   const validationResult = useMemo(() => {
-    if (!tanks[0]) return null;
+    if (!currentTank) return null;
     return validateSetup(
-      tanks[0],
+      currentTank,
       accessories,
       inhabitants,
       {
@@ -160,7 +258,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
         nitrates: latestLog.nitrates || 0
       }
     );
-  }, [tanks, accessories, inhabitants, latestLog]);
+  }, [currentTank, accessories, inhabitants, latestLog]);
 
   const healthScore = useMemo(() => {
     if (!validationResult) return { 
@@ -196,84 +294,25 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
 
   const ResponsiveGridLayout = Responsive as any;
 
-  const handleLongPress = () => {
+  const handleLongPress = useCallback((action?: () => void) => {
     if (!isEditMode) {
       setIsEditMode(true);
+      if (action) action();
       if (navigator.vibrate) {
         navigator.vibrate(60);
       }
     }
-  };
+  }, [isEditMode]);
 
-  // Unified Long Press Logic for Mobile & Desktop
-  const useLongPressLogic = () => {
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
-    const startPosRef = useRef<{ x: number, y: number } | null>(null);
-    const isLongPressTriggered = useRef(false);
-    
-    const start = (e: any) => {
-      if (isEditMode) return;
-      
-      isLongPressTriggered.current = false;
-      // Support both touch and mouse
-      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-      
-      startPosRef.current = { x: clientX, y: clientY };
-
-      timerRef.current = setTimeout(() => {
-        isLongPressTriggered.current = true;
-        handleLongPress();
-      }, 700); // Slightly faster for better feel
-    };
-    
-    const move = (e: any) => {
-      if (!startPosRef.current || !timerRef.current) return;
-      
-      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-      
-      const dx = Math.abs(clientX - startPosRef.current.x);
-      const dy = Math.abs(clientY - startPosRef.current.y);
-      
-      // If moved more than 10px, it's likely a scroll, cancel long press
-      if (dx > 10 || dy > 10) {
-        stop();
-      }
-    };
-    
-    const stop = () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-      startPosRef.current = null;
-    };
-    
-    return {
-      onPointerDown: start,
-      onPointerMove: move,
-      onPointerUp: stop,
-      onPointerLeave: stop,
-      onPointerCancel: stop,
-      onContextMenu: (e: any) => {
-        if (isEditMode || isLongPressTriggered.current) {
-          e.preventDefault();
-        }
-      }
-    };
-  };
-
-  const healthLongPress = useLongPressLogic();
-  const chartLongPress = useLongPressLogic();
-  const tempLongPress = useLongPressLogic();
-  const phLongPress = useLongPressLogic();
-  const nitratesLongPress = useLongPressLogic();
-  const khLongPress = useLongPressLogic();
-  const inventoryLongPress = useLongPressLogic();
-  const inhabitantsLongPress = useLongPressLogic();
-  const remindersLongPress = useLongPressLogic();
-  const accessoriesLongPress = useLongPressLogic();
+  const healthLongPress = useLongPress(() => handleLongPress(() => setShowValidationModal(true)));
+  const tempLongPress = useLongPress(() => handleLongPress(() => setEditingParam('temp')));
+  const phLongPress = useLongPress(() => handleLongPress(() => setEditingParam('ph')));
+  const nitratesLongPress = useLongPress(() => handleLongPress(() => setEditingParam('nitrates')));
+  const khLongPress = useLongPress(() => handleLongPress(() => setEditingParam('kh')));
+  const inventoryLongPress = useLongPress(() => handleLongPress());
+  const inhabitantsLongPress = useLongPress(() => handleLongPress(() => setShowInhabitantsModal(true)));
+  const remindersLongPress = useLongPress(() => handleLongPress(() => setShowRemindersModal(true)));
+  const accessoriesLongPress = useLongPress(() => handleLongPress(() => setShowAccessoriesModal(true)));
 
   const overdueReminders = useMemo(() => {
     return reminders.filter(r => new Date(r.nextDue) < new Date()).length;
@@ -288,38 +327,182 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
 
   return (
     <>
-      <div className="p-6 text-white animate-fade-in">
-        <div className="flex justify-between items-center mb-6 px-4 sm:px-0">
-          <h1 className="text-2xl sm:text-3xl font-bold">{t('dashboard_title')}</h1>
-          <div className="flex gap-2">
-            {!isEditMode && (
-              <button 
-                onClick={() => setShowValidationModal(true)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95 ${
-                  validationResult?.status === 'Errore Critico' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' :
-                  validationResult?.status === 'Warning' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' :
-                  'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
-                }`}
-              >
-                <ShieldCheck size={18} />
-                <span className="hidden sm:inline">Analisi Setup</span>
-              </button>
+      <div className="relative overflow-hidden bg-zinc-800 min-h-[calc(100vh-65px)] flex flex-col">
+        {/* Peek Labels */}
+        <div className="absolute inset-0 pointer-events-none z-0">
+          {/* Next Tank / Add Tank (Right Side) */}
+          <motion.div 
+            style={{ opacity: nextLabelOpacity, scale: labelScale }}
+            className="absolute right-0 top-0 bottom-0 w-24 flex items-center justify-center"
+          >
+            {currentTankIndex < tanks.length - 1 ? (
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-white/40 font-black text-2xl mb-2">→</span>
+                <span className="[writing-mode:vertical-rl] rotate-180 text-white/40 font-black uppercase tracking-[0.4em] text-xs whitespace-nowrap">
+                  {tanks[currentTankIndex + 1].name}
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-emerald-400 font-black text-2xl mb-2">+</span>
+                <span className="[writing-mode:vertical-rl] rotate-180 text-emerald-400 font-black uppercase tracking-[0.4em] text-xs whitespace-nowrap">
+                  aggiungi acquario
+                </span>
+              </div>
             )}
-            <button 
-              onClick={() => setIsEditMode(!isEditMode)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95 ${
-                isEditMode ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-white/60 hover:bg-white/10'
-              }`}
+          </motion.div>
+
+          {/* Previous Tank (Left Side) */}
+          {currentTankIndex > 0 && (
+            <motion.div 
+              style={{ opacity: prevLabelOpacity, scale: labelScale }}
+              className="absolute left-0 top-0 bottom-0 w-24 flex items-center justify-center"
             >
-              {isEditMode ? <CheckCircle2 size={18} /> : <LayoutGrid size={18} />}
-              <span className="hidden sm:inline">{isEditMode ? t('save_layout') : t('edit_layout')}</span>
-            </button>
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-white/40 font-black text-2xl mb-2">←</span>
+                <span className="[writing-mode:vertical-rl] text-white/40 font-black uppercase tracking-[0.4em] text-xs whitespace-nowrap">
+                  {tanks[currentTankIndex - 1].name}
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </div>
+
+        <div className="flex-1 relative grid grid-cols-1 grid-rows-1 overflow-hidden">
+          <AnimatePresence initial={false} custom={direction}>
+            <motion.div 
+              key={currentTankIndex}
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: "spring", stiffness: 400, damping: 40, mass: 0.8 },
+                opacity: { duration: 0.15 }
+              }}
+              className="col-start-1 row-start-1 text-white touch-none relative z-10 w-full"
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.2}
+              style={{ x: dragX }}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="p-6">
+          <div className="flex flex-col items-center mb-12 px-4 sm:px-0">
+            <div className="relative">
+              <button 
+                onClick={() => setShowTankSelector(!showTankSelector)}
+                className="flex items-center group"
+              >
+                <h1 className="text-xl sm:text-2xl font-medium text-white/60 uppercase tracking-[0.3em] group-hover:text-white transition-colors">
+                  {currentTank?.name}
+                </h1>
+              </button>
+
+              <AnimatePresence>
+                {showTankSelector && (
+                  <>
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setShowTankSelector(false)}
+                      className="fixed inset-0 z-40"
+                    />
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-64 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                    >
+                      <div className="p-2">
+                        {tanks.map((tank, index) => (
+                          <button
+                            key={tank.id}
+                            onClick={() => {
+                              setDirection(0);
+                              onSetCurrentTankIndex(index);
+                              setShowTankSelector(false);
+                            }}
+                            className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
+                              index === currentTankIndex ? 'bg-emerald-500/20 text-emerald-400' : 'hover:bg-white/5 text-white/60'
+                            }`}
+                          >
+                            <span className="font-medium truncate">{tank.name}</span>
+                            {index === currentTankIndex && <CheckCircle2 size={16} />}
+                          </button>
+                        ))}
+                        <div className="h-px bg-white/5 my-2" />
+                        <button
+                          onClick={() => {
+                            onAddNewTank();
+                            setShowTankSelector(false);
+                          }}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-500/10 text-emerald-400 transition-all"
+                        >
+                          <Plus size={18} />
+                          <span className="font-bold uppercase tracking-wider text-xs">Nuovo Acquario</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+            
+            <div className="h-px w-24 bg-white/10 mb-8" />
+            
+            {/* Tank Indicators */}
+            {tanks.length > 1 && (
+              <div className="flex gap-2 mb-8">
+                {tanks.map((_, index) => (
+                  <div 
+                    key={index}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      index === currentTankIndex ? 'w-6 bg-emerald-400' : 'w-1.5 bg-white/20'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+            
+            <div className="flex items-center justify-center gap-8 w-full">
+            <h2 className="text-sm sm:text-base font-bold text-emerald-400 uppercase tracking-[0.3em]">
+              {t('dashboard_title')}
+            </h2>
+            
+            <div className="flex gap-3">
+              {!isEditMode && (
+                <button 
+                  onClick={() => setShowValidationModal(true)}
+                  className={`p-2.5 rounded-xl transition-all active:scale-95 ${
+                    validationResult?.status === 'Errore Critico' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' :
+                    validationResult?.status === 'Warning' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' :
+                    'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
+                  }`}
+                  title="Analisi Setup"
+                >
+                  <ShieldCheck size={20} />
+                </button>
+              )}
+              <button 
+                onClick={() => setIsEditMode(!isEditMode)}
+                className={`p-2.5 rounded-xl transition-all active:scale-95 ${
+                  isEditMode ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/10 text-white/60 hover:bg-white/20'
+                }`}
+                title={isEditMode ? t('save_layout') : t('edit_layout')}
+              >
+                {isEditMode ? <CheckCircle2 size={20} /> : <LayoutGrid size={20} />}
+              </button>
+            </div>
           </div>
         </div>
         
-        <div ref={gridRef}>
-          {gridWidth > 0 && (
+        <div ref={gridRef} className="w-full min-h-[500px]">
+          {isReady && gridWidth > 0 && (
             <ResponsiveGridLayout 
+              key={isEditMode ? 'edit' : 'view'}
               className="layout"
               layouts={currentLayouts}
               onLayoutChange={onLayoutChange}
@@ -328,26 +511,31 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
               rowHeight={90}
               width={gridWidth}
               draggableHandle=".drag-handle"
-              draggableCancel="button"
+              draggableCancel="button, [role='button'], input, textarea, a"
               isDraggable={isEditMode}
               isResizable={isEditMode}
               preventCollision={false}
               compactType="vertical"
               margin={[16, 16]}
-              containerPadding={{
-                lg: [24, 24],
-                md: [24, 24],
-                sm: [16, 16],
-                xs: [16, 16],
-                xxs: [12, 12]
-              }}
-              useCSSTransforms={true}
-            >
+            containerPadding={{
+              lg: [24, 24],
+              md: [24, 24],
+              sm: [16, 16],
+              xs: [16, 16],
+              xxs: [12, 12]
+            }}
+            useCSSTransforms={true}
+          >
               <div key="health" 
                 className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
                 {...healthLongPress}
               >
-                <div className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center min-w-[150px] transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}>
+                <div 
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => isEditMode && setShowValidationModal(true)}
+                  className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center min-w-[150px] transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : 'cursor-pointer hover:bg-white/10'}`}
+                >
                   {isEditMode && (
                     <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
                       <GripVertical size={20} />
@@ -390,7 +578,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
                     label={t('log_test_temp')} 
                     value={latestLog.temp ? formatTemperature(latestLog.temp) : '--'} 
                     colorClass="bg-red-500/20" 
-                    onClick={() => setEditingParam('temp')}
+                    onClick={() => isEditMode && setEditingParam('temp')}
                     isEditMode={isEditMode}
                   />
                 </div>
@@ -411,7 +599,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
                     label="pH" 
                     value={latestLog.ph || '--'} 
                     colorClass="bg-sky-500/20" 
-                    onClick={() => setEditingParam('ph')}
+                    onClick={() => isEditMode && setEditingParam('ph')}
                     isEditMode={isEditMode}
                   />
                 </div>
@@ -432,7 +620,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
                     label={t('log_test_nitrates')} 
                     value={latestLog.nitrates ? `${latestLog.nitrates} mg/L` : '--'} 
                     colorClass="bg-amber-500/20" 
-                    onClick={() => setEditingParam('nitrates')}
+                    onClick={() => isEditMode && setEditingParam('nitrates')}
                     isEditMode={isEditMode}
                   />
                 </div>
@@ -453,7 +641,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
                     label={t('log_test_kh')} 
                     value={latestLog.kh ? `${latestLog.kh} °dKH` : '--'} 
                     colorClass="bg-indigo-500/20" 
-                    onClick={() => setEditingParam('kh')}
+                    onClick={() => isEditMode && setEditingParam('kh')}
                     isEditMode={isEditMode}
                   />
                 </div>
@@ -492,7 +680,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
                   <div 
                     role="button"
                     tabIndex={0}
-                    onClick={() => !isEditMode && setShowInhabitantsModal(true)}
+                    onClick={() => isEditMode && setShowInhabitantsModal(true)}
                     className={`w-full h-full p-4 flex items-center justify-around ${!isEditMode ? 'cursor-pointer hover:bg-white/10' : ''} transition-colors duration-200`}
                   >
                     {/* Plants Section */}
@@ -559,7 +747,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
                       </span>
                     ) : 'Nessuno'} 
                     colorClass={overdueReminders > 0 ? "bg-red-500/20" : "bg-emerald-500/20"} 
-                    onClick={() => setShowRemindersModal(true)}
+                    onClick={() => isEditMode && setShowRemindersModal(true)}
                     isEditMode={isEditMode}
                   />
                   {overdueReminders > 0 && !isEditMode && (
@@ -587,7 +775,7 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
                     label="Accessori" 
                     value={accessories.length > 0 ? `${accessories.length} Elementi` : 'Nessuno'} 
                     colorClass="bg-indigo-500/20" 
-                    onClick={() => setShowAccessoriesModal(true)}
+                    onClick={() => isEditMode && setShowAccessoriesModal(true)}
                     isEditMode={isEditMode}
                   />
                 </div>
@@ -595,9 +783,13 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
             </ResponsiveGridLayout>
           )}
         </div>
-      </div>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  </div>
+  </div>
 
-      {editingParam && (
+    {editingParam && (
         <LogTestModal 
           parameter={editingParam}
           testLogs={testLogs}
@@ -620,7 +812,11 @@ export default function Dashboard({ testLogs, onLogTest, handleDeleteTestLog, on
         <RemindersModal 
           reminders={reminders}
           onUpdate={onUpdateReminders}
-          onClose={() => setShowRemindersModal(false)}
+          onClose={() => {
+            setShowRemindersModal(false);
+            setRemindersFilter('all');
+          }}
+          initialFilter={remindersFilter}
         />
       )}
 

@@ -40,7 +40,7 @@ export interface ValidationResult {
 
 export interface HealthScoreResult {
   score: number;
-  status: 'OTTIMO' | 'STABILE' | 'SQUILIBRATO' | 'CRITICO';
+  status: 'OTTIMO' | 'STABILE' | 'SQUILIBRATO' | 'CRITICO' | 'NESSUN DATO';
   color: string;
   riskFactors: string[];
   quickAdvice?: string;
@@ -52,6 +52,16 @@ export function calculateHealthScore(
   validation: ValidationResult,
   inhabitants: { fish: any[]; plants: any[]; waterParams: any }
 ): HealthScoreResult {
+  if (testLogs.length === 0) {
+    return {
+      score: 0,
+      status: 'NESSUN DATO',
+      color: '#9CA3AF', // Gray-400
+      riskFactors: ["Nessun dato inserito"],
+      quickAdvice: "Inserisci i parametri dell'acqua per calcolare il punteggio di salute."
+    };
+  }
+
   let score = 100;
   const riskFactors: string[] = [];
   let quickAdvice = "";

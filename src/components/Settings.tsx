@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, User, LogOut } from 'lucide-react';
+import { ArrowLeft, User, LogOut, Trash2, Box, X, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 const languages = [
   { code: 'it', name: 'Italiano' },
@@ -15,11 +17,19 @@ const mockUser = {
   email: 'mario.rossi@example.com',
 };
 
-export default function Settings({ onBack, onLogout }) {
+export default function Settings({ onBack, onLogout, tanks = [], onDeleteTank }) {
   const { t, i18n } = useTranslation();
+  const [tankToDelete, setTankToDelete] = useState(null);
 
   const changeLanguage = (lng) => {
     i18n.changeLanguage(lng);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (tankToDelete) {
+      onDeleteTank(tankToDelete.id);
+      setTankToDelete(null);
+    }
   };
 
   return (
@@ -49,6 +59,29 @@ export default function Settings({ onBack, onLogout }) {
         </div>
       </div>
 
+      {/* Manage Tanks Section */}
+      <div className="bg-zinc-800/50 border border-white/10 rounded-2xl p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-3"><Box size={22} /> Gestione Acquari</h2>
+        <div className="space-y-3">
+          {tanks.map((tank) => (
+            <div key={tank.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
+              <div>
+                <p className="font-bold">{tank.name}</p>
+                <p className="text-xs text-white/40 uppercase tracking-wider">{tank.volume} Litri • {tank.type}</p>
+              </div>
+              {tanks.length > 1 && (
+                <button 
+                  onClick={() => setTankToDelete(tank)}
+                  className="p-2 text-white/20 hover:text-red-400 transition-colors"
+                >
+                  <Trash2 size={18} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Language Section */}
       <div className="bg-zinc-800/50 border border-white/10 rounded-2xl p-6">
         <h2 className="text-xl font-semibold mb-4">{t('language_selection')}</h2>
@@ -69,6 +102,50 @@ export default function Settings({ onBack, onLogout }) {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {tankToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-zinc-900 border border-white/10 rounded-3xl p-6 max-w-md w-full shadow-2xl"
+            >
+              <div className="flex items-center gap-4 mb-6 text-red-400">
+                <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+                  <AlertTriangle size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Elimina Acquario</h3>
+                  <p className="text-sm text-white/60">L'azione è irreversibile</p>
+                </div>
+              </div>
+
+              <p className="text-white/80 mb-8 leading-relaxed">
+                Sei sicuro di voler eliminare l'acquario <span className="text-white font-bold">"{tankToDelete.name}"</span>? 
+                Tutti i dati associati, inclusi i log dei test e gli abitanti, verranno persi definitivamente.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setTankToDelete(null)}
+                  className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-colors"
+                >
+                  Annulla
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-red-500/20"
+                >
+                  Elimina
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,8 +1,9 @@
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useLocale } from '../context/LocaleContext';
 
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
+const CustomTooltip = memo(({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
     const { t } = useTranslation();
     const { formatTemperature } = useLocale();
 
@@ -36,10 +37,14 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
     }
 
     return null;
-};
+});
 
 
-export default function HistoryChart({ data }) {
+interface HistoryChartProps {
+    data: any[];
+}
+
+const HistoryChart = memo(({ data }: HistoryChartProps) => {
     const { t } = useTranslation();
 
     if (!data || data.length < 2) {
@@ -92,4 +97,6 @@ export default function HistoryChart({ data }) {
             </ResponsiveContainer>
         </div>
     );
-}
+});
+
+export default HistoryChart;

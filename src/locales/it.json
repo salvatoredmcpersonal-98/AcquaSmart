@@ -53,5 +53,11 @@
   "inhabitants_add_fish": "Aggiungi pesce...",
   "inhabitants_add_plant": "Aggiungi pianta...",
   "inhabitants_empty": "Nessun elemento aggiunto",
-  "add_button": "Aggiungi"
+  "add_button": "Aggiungi",
+  "paywall_feature_multitank": "Gestione Multi-vasca",
+  "paywall_feature_charts": "Grafici AI Avanzati",
+  "paywall_feature_notifications": "Notifiche Predittive",
+  "paywall_feature_unlimited": "Salvataggio Dati Illimitato",
+  "paywall_feature_support": "Supporto Prioritario",
+  "tank_name_duplicate_error": "Un acquario con questo nome esiste già"
 }

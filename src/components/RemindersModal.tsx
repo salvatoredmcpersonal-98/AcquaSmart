@@ -12,13 +12,23 @@ const TASK_SUGGESTIONS = [
   { name: 'Altro', icon: '📝', lucide: Info },
 ];
 
-export default function RemindersModal({ reminders, onUpdate, onClose }) {
+export default function RemindersModal({ reminders, onUpdate, onClose, initialFilter = 'all' }) {
   const { t } = useTranslation();
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTask, setNewTask] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newFrequency, setNewFrequency] = useState(7);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+
+  const isNotificationMode = initialFilter === 'overdue';
+
+  const isOverdue = (nextDue: string) => {
+    return new Date(nextDue) < new Date();
+  };
+
+  const filteredReminders = isNotificationMode 
+    ? reminders.filter(r => isOverdue(r.nextDue))
+    : reminders;
 
   const handleAddReminder = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,10 +70,6 @@ export default function RemindersModal({ reminders, onUpdate, onClose }) {
     onUpdate(reminders.filter(r => r.id !== id));
   };
 
-  const isOverdue = (nextDue: string) => {
-    return new Date(nextDue) < new Date();
-  };
-
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
   };
@@ -90,7 +96,7 @@ export default function RemindersModal({ reminders, onUpdate, onClose }) {
               <div className="bg-emerald-500/20 p-2 rounded-xl">
                 <Bell className="text-emerald-400" size={20} />
               </div>
-              Promemoria
+              {isNotificationMode ? 'Centro Notifiche' : 'Promemoria'}
             </h2>
             <button 
               onClick={onClose}
@@ -103,123 +109,127 @@ export default function RemindersModal({ reminders, onUpdate, onClose }) {
 
         <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar flex-grow">
           <AnimatePresence mode="popLayout">
-            {showAddForm ? (
-              <motion.form 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                onSubmit={handleAddReminder}
-                className="bg-white/5 p-4 rounded-2xl border border-emerald-500/30 mb-6 space-y-4"
-              >
-                <div>
-                  <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2 ml-1">
-                    Scegli un'operazione
-                  </label>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    {TASK_SUGGESTIONS.map((suggestion) => (
-                      <button
-                        key={suggestion.name}
-                        type="button"
-                        onClick={() => setNewTask(suggestion.name)}
-                        className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-xs font-medium ${
-                          newTask === suggestion.name 
-                            ? 'bg-emerald-500 border-emerald-500 text-white' 
-                            : 'bg-white/5 border-white/10 text-white/60 hover:border-white/30'
-                        }`}
-                      >
-                        <span>{suggestion.icon}</span>
-                        {suggestion.name}
-                      </button>
-                    ))}
-                  </div>
-                  <input 
-                    type="text"
-                    value={newTask}
-                    onChange={(e) => setNewTask(e.target.value)}
-                    placeholder="Oppure scrivi qui..."
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-1.5 ml-1">
-                    Descrizione (opzionale)
-                  </label>
-                  <textarea 
-                    value={newDescription}
-                    onChange={(e) => setNewDescription(e.target.value)}
-                    placeholder="Aggiungi dettagli..."
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm resize-none h-20"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-1.5 ml-1">
-                    Data di inizio
-                  </label>
-                  <input 
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-1.5 ml-1">
-                    Ogni quanti giorni?
-                  </label>
-                  <div className="flex items-center gap-4">
+            {!isNotificationMode && (
+              showAddForm ? (
+                <motion.form 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  onSubmit={handleAddReminder}
+                  className="bg-white/5 p-4 rounded-2xl border border-emerald-500/30 mb-6 space-y-4"
+                >
+                  <div>
+                    <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2 ml-1">
+                      Scegli un'operazione
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      {TASK_SUGGESTIONS.map((suggestion) => (
+                        <button
+                          key={suggestion.name}
+                          type="button"
+                          onClick={() => setNewTask(suggestion.name)}
+                          className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-xs font-medium ${
+                            newTask === suggestion.name 
+                              ? 'bg-emerald-500 border-emerald-500 text-white' 
+                              : 'bg-white/5 border-white/10 text-white/60 hover:border-white/30'
+                          }`}
+                        >
+                          <span>{suggestion.icon}</span>
+                          {suggestion.name}
+                        </button>
+                      ))}
+                    </div>
                     <input 
-                      type="range"
-                      min="1"
-                      max="60"
-                      value={newFrequency}
-                      onChange={(e) => setNewFrequency(parseInt(e.target.value))}
-                      className="flex-grow accent-emerald-500"
+                      type="text"
+                      value={newTask}
+                      onChange={(e) => setNewTask(e.target.value)}
+                      placeholder="Oppure scrivi qui..."
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm"
                     />
-                    <span className="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-lg font-bold min-w-[60px] text-center">
-                      {newFrequency} gg
-                    </span>
                   </div>
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <button 
-                    type="button"
-                    onClick={() => setShowAddForm(false)}
-                    className="flex-1 py-3 rounded-xl font-bold text-white/60 hover:bg-white/5 transition-colors"
-                  >
-                    Annulla
-                  </button>
-                  <button 
-                    type="submit"
-                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
-                  >
-                    Salva
-                  </button>
-                </div>
-              </motion.form>
-            ) : (
-              <motion.button 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                onClick={() => setShowAddForm(true)}
-                className="w-full bg-white/5 border border-dashed border-white/20 hover:border-emerald-500/50 hover:bg-emerald-500/5 py-4 rounded-2xl transition-all flex items-center justify-center gap-2 text-white/40 hover:text-emerald-400 mb-6 group"
-              >
-                <Plus size={20} className="group-hover:scale-110 transition-transform" />
-                <span className="font-bold">Nuovo Promemoria</span>
-              </motion.button>
+
+                  <div>
+                    <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-1.5 ml-1">
+                      Descrizione (opzionale)
+                    </label>
+                    <textarea 
+                      value={newDescription}
+                      onChange={(e) => setNewDescription(e.target.value)}
+                      placeholder="Aggiungi dettagli..."
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm resize-none h-20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-1.5 ml-1">
+                      Data di inizio
+                    </label>
+                    <input 
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-1.5 ml-1">
+                      Ogni quanti giorni?
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <input 
+                        type="range"
+                        min="1"
+                        max="60"
+                        value={newFrequency}
+                        onChange={(e) => setNewFrequency(parseInt(e.target.value))}
+                        className="flex-grow accent-emerald-500"
+                      />
+                      <span className="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-lg font-bold min-w-[60px] text-center">
+                        {newFrequency} gg
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <button 
+                      type="button"
+                      onClick={() => setShowAddForm(false)}
+                      className="flex-1 py-3 rounded-xl font-bold text-white/60 hover:bg-white/5 transition-colors"
+                    >
+                      Annulla
+                    </button>
+                    <button 
+                      type="submit"
+                      className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+                    >
+                      Salva
+                    </button>
+                  </div>
+                </motion.form>
+              ) : (
+                <motion.button 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  onClick={() => setShowAddForm(true)}
+                  className="w-full bg-white/5 border border-dashed border-white/20 hover:border-emerald-500/50 hover:bg-emerald-500/5 py-4 rounded-2xl transition-all flex items-center justify-center gap-2 text-white/40 hover:text-emerald-400 mb-6 group"
+                >
+                  <Plus size={20} className="group-hover:scale-110 transition-transform" />
+                  <span className="font-bold">Nuovo Promemoria</span>
+                </motion.button>
+              )
             )}
           </AnimatePresence>
 
           <div className="space-y-3">
-            {reminders.length === 0 ? (
+            {filteredReminders.length === 0 ? (
               <div className="text-center py-12">
                 <Bell size={48} className="mx-auto text-white/10 mb-4" />
-                <p className="text-white/40 italic">Nessun promemoria impostato</p>
+                <p className="text-white/40 italic">
+                  {isNotificationMode ? 'Nessun avviso urgente' : 'Nessun promemoria impostato'}
+                </p>
               </div>
             ) : (
-              reminders.map((reminder) => {
+              filteredReminders.map((reminder) => {
                 const overdue = isOverdue(reminder.nextDue);
                 const suggestion = TASK_SUGGESTIONS.find(s => s.name === reminder.task);
                 const Icon = suggestion?.lucide || Bell;
@@ -256,12 +266,14 @@ export default function RemindersModal({ reminders, onUpdate, onClose }) {
                           </div>
                         </div>
                       </div>
-                      <button 
-                        onClick={() => handleRemoveReminder(reminder.id)}
-                        className="text-white/10 hover:text-red-400 p-1 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {!isNotificationMode && (
+                        <button 
+                          onClick={() => handleRemoveReminder(reminder.id)}
+                          className="text-white/10 hover:text-red-400 p-1 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                     
                     <button 
@@ -273,7 +285,7 @@ export default function RemindersModal({ reminders, onUpdate, onClose }) {
                       }`}
                     >
                       <CheckCircle2 size={14} />
-                      Segna come fatto
+                      {isNotificationMode ? 'Eseguito' : 'Segna come fatto'}
                     </button>
                   </motion.div>
                 );

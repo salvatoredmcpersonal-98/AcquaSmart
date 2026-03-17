@@ -1,30 +1,37 @@
-import { useState, useEffect, RefObject } from 'react';
+import { useState, useLayoutEffect, RefObject } from 'react';
 
-export function useElementWidth(ref: RefObject<HTMLElement>): number {
+export function useElementWidth(ref: RefObject<HTMLElement>, deps: any[] = []): number {
   const [width, setWidth] = useState(0);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!ref.current) {
       return;
     }
+    
+    const element = ref.current;
+    const updateWidth = () => {
+      const newWidth = element.offsetWidth;
+      if (newWidth > 0) {
+        setWidth(prev => prev === newWidth ? prev : newWidth);
+      }
+    };
 
     const observer = new ResizeObserver(entries => {
       if (entries[0]) {
-        setWidth(entries[0].contentRect.width);
+        const newWidth = entries[0].contentRect.width;
+        if (newWidth > 0) {
+          setWidth(prev => prev === newWidth ? prev : newWidth);
+        }
       }
     });
 
-    observer.observe(ref.current);
-
-    // Set initial width
-    setWidth(ref.current.offsetWidth);
+    observer.observe(element);
+    updateWidth();
 
     return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
+      observer.unobserve(element);
     };
-  }, [ref]);
+  }, [ref, ...deps]);
 
   return width;
 }
