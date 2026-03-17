@@ -25,10 +25,25 @@ const Header = memo(({ onSettingsClick, onLogoClick, onRemindersClick, reminders
         {t('app_title')}
       </button>
       <div className="flex items-center gap-4">
-        {isActive && (
-          <div className="bg-emerald-500/20 text-emerald-300 text-xs font-bold px-3 py-1 rounded-full">
-            {t('trial_ends_in_days', { days: daysRemaining })}
-          </div>
+        {isActive ? (
+          daysRemaining <= 1 ? (
+            <div className="bg-orange-500 text-white text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-lg shadow-orange-500/20">
+              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+              {t('trial_expires_today') || 'La tua prova scade oggi'}
+            </div>
+          ) : (
+            <div className="bg-emerald-500/20 text-emerald-300 text-[10px] sm:text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-500/20">
+              {t('trial_ends_in_days', { days: daysRemaining })}
+            </div>
+          )
+        ) : (
+          <button 
+            onClick={onSettingsClick}
+            className="bg-amber-500/20 text-amber-400 text-[10px] sm:text-xs font-bold px-3 py-1.5 rounded-lg border border-amber-500/20 hover:bg-amber-500/30 transition-colors flex items-center gap-2"
+          >
+            <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+            {t('view_offers') || 'Vedi Offerte'}
+          </button>
         )}
         <button 
           onClick={onRemindersClick}

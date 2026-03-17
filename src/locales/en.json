@@ -59,5 +59,7 @@
   "paywall_feature_notifications": "Predictive Notifications",
   "paywall_feature_unlimited": "Unlimited Data Storage",
   "paywall_feature_support": "Priority Support",
-  "tank_name_duplicate_error": "An aquarium with this name already exists"
+  "tank_name_duplicate_error": "An aquarium with this name already exists",
+  "view_offers": "View Offers",
+  "trial_expires_today": "Your trial expires today"
 }

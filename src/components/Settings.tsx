@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, User, LogOut, Trash2, Box, X, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, User, LogOut, Trash2, Box, X, AlertTriangle, Settings2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import EditTankModal from './EditTankModal';
 
 const languages = [
   { code: 'it', name: 'Italiano' },
@@ -17,9 +18,10 @@ const mockUser = {
   email: 'mario.rossi@example.com',
 };
 
-export default function Settings({ onBack, onLogout, tanks = [], onDeleteTank }) {
+export default function Settings({ onBack, onLogout, tanks = [], onDeleteTank, onUpdateTank }) {
   const { t, i18n } = useTranslation();
   const [tankToDelete, setTankToDelete] = useState(null);
+  const [tankToEdit, setTankToEdit] = useState(null);
 
   const changeLanguage = (lng) => {
     i18n.changeLanguage(lng);
@@ -69,14 +71,24 @@ export default function Settings({ onBack, onLogout, tanks = [], onDeleteTank })
                 <p className="font-bold">{tank.name}</p>
                 <p className="text-xs text-white/40 uppercase tracking-wider">{tank.volume} Litri • {tank.type}</p>
               </div>
-              {tanks.length > 1 && (
+              <div className="flex items-center gap-2">
                 <button 
-                  onClick={() => setTankToDelete(tank)}
-                  className="p-2 text-white/20 hover:text-red-400 transition-colors"
+                  onClick={() => setTankToEdit(tank)}
+                  className="p-2 text-white/20 hover:text-emerald-400 transition-colors"
+                  title="Modifica"
                 >
-                  <Trash2 size={18} />
+                  <Settings2 size={18} />
                 </button>
-              )}
+                {tanks.length > 1 && (
+                  <button 
+                    onClick={() => setTankToDelete(tank)}
+                    className="p-2 text-white/20 hover:text-red-400 transition-colors"
+                    title="Elimina"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -102,6 +114,19 @@ export default function Settings({ onBack, onLogout, tanks = [], onDeleteTank })
           </div>
         </div>
       </div>
+
+      {/* Edit Tank Modal */}
+      <AnimatePresence>
+        {tankToEdit && (
+          <EditTankModal 
+            tank={tankToEdit}
+            onUpdate={onUpdateTank}
+            onDelete={onDeleteTank}
+            onClose={() => setTankToEdit(null)}
+            existingTanks={tanks}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
@@ -149,3 +174,4 @@ export default function Settings({ onBack, onLogout, tanks = [], onDeleteTank })
     </div>
   );
 }
+

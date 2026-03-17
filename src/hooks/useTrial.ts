@@ -34,6 +34,12 @@ export const useTrial = (userCreatedAt: Date | null = MOCK_USER_CREATED_AT) => {
     isActive: true,
     isReadOnly: false,
     daysRemaining: 21,
+    timeLeft: {
+      days: 21,
+      hours: 0,
+      minutes: 0,
+      seconds: 0
+    }
   });
 
   useEffect(() => {
@@ -43,21 +49,36 @@ export const useTrial = (userCreatedAt: Date | null = MOCK_USER_CREATED_AT) => {
       const registrationDate = new Date(userCreatedAt);
       const currentDate = new Date();
       const trialDurationDays = 21;
+      const trialDurationMs = trialDurationDays * 24 * 60 * 60 * 1000;
+      
+      const expiryDate = new Date(registrationDate.getTime() + trialDurationMs);
+      const diffMs = expiryDate.getTime() - currentDate.getTime();
 
-      const diffTime = currentDate.getTime() - registrationDate.getTime();
-      const daysSinceRegistration = diffTime / (1000 * 60 * 60 * 24);
-
-      if (daysSinceRegistration > trialDurationDays) {
-        setTrialState({ isActive: false, isReadOnly: true, daysRemaining: 0 });
+      if (diffMs <= 0) {
+        setTrialState({ 
+          isActive: false, 
+          isReadOnly: true, 
+          daysRemaining: 0,
+          timeLeft: { days: 0, hours: 0, minutes: 0, seconds: 0 }
+        });
         return;
       }
 
-      const daysRemaining = Math.ceil(trialDurationDays - daysSinceRegistration);
-      setTrialState({ isActive: true, isReadOnly: false, daysRemaining });
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+      setTrialState({ 
+        isActive: true, 
+        isReadOnly: false, 
+        daysRemaining: Math.ceil(diffMs / (1000 * 60 * 60 * 24)),
+        timeLeft: { days, hours, minutes, seconds }
+      });
     };
 
     calculateTrialState();
-    const interval = setInterval(calculateTrialState, 1000 * 60 * 60); // Recalculate every hour
+    const interval = setInterval(calculateTrialState, 1000); // Update every second for countdown
 
     return () => clearInterval(interval);
   }, [userCreatedAt]);

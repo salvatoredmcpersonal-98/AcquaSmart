@@ -16,6 +16,7 @@ export default function App() {
   const [tanks, setTanks] = usePersistentState('userTanks_v2', []);
   const [currentTankIndex, setCurrentTankIndex] = usePersistentState('currentTankIndex', 0);
   const [isAddingNewTank, setIsAddingNewTank] = useState(false);
+  const [isBasicMode, setIsBasicMode] = usePersistentState('isBasicMode', false);
   const [testLogs, setTestLogs] = usePersistentState('userTestLogs_v3', []);
   const initialInhabitants = {
     fish: [],
@@ -133,6 +134,10 @@ export default function App() {
     });
   };
 
+  const handleUpdateTank = (updatedTank) => {
+    setTanks(prevTanks => prevTanks.map(t => t.id === updatedTank.id ? updatedTank : t));
+  };
+
   const handleDeleteTank = (tankId) => {
     if (tanks.length <= 1) return;
     
@@ -173,7 +178,10 @@ export default function App() {
       );
     }
 
-    if (trialState.isReadOnly) {
+    if (trialState.isReadOnly && !isBasicMode) {
+      const safeIndex = Math.min(Math.max(0, currentTankIndex), Math.max(0, tanks.length - 1));
+      const currentTank = tanks[safeIndex] || tanks[0];
+      
       return (
         <motion.div
           key="paywall"
@@ -182,7 +190,10 @@ export default function App() {
           exit={{ opacity: 0 }}
           className="flex-1 flex flex-col"
         >
-          <Paywall />
+          <Paywall 
+            tankType={currentTank?.type} 
+            onContinueBasic={() => setIsBasicMode(true)}
+          />
         </motion.div>
       );
     }
@@ -215,6 +226,7 @@ export default function App() {
             onBack={() => setCurrentPage('dashboard')} 
             onLogout={handleLogout} 
             tanks={tanks}
+            onUpdateTank={handleUpdateTank}
             onDeleteTank={handleDeleteTank}
           />
         ) : (
@@ -236,6 +248,8 @@ export default function App() {
             onAddNewTank={() => setIsAddingNewTank(true)}
             showRemindersInitial={showRemindersFromHeader}
             onCloseRemindersInitial={() => setShowRemindersFromHeader(false)}
+            isBasicMode={isBasicMode}
+            onShowPaywall={() => setIsBasicMode(false)}
           />
         )}
       </motion.div>
