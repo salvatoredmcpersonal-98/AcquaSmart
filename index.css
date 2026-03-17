@@ -1,68 +1,63 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
-import { localesConfig, DEFAULT_LOCALE, LocaleConfig } from '../config/locales';
-
-interface LocaleContextType {
-  locale: LocaleConfig;
-  formatCurrency: (value: number) => string;
-  formatTemperature: (celsiusValue: number) => string;
+{
+  "app_title": "AcquaSmart",
+  "login_welcome": "Benvenuto in AcquaSmart",
+  "login_tagline": "Protezione biologica avanzata per il tuo ecosistema.",
+  "login_with_google": "Accedi con Google",
+  "login_with_apple": "Accedi con Apple",
+  "login_with_email": "Continua con Email",
+  "dashboard_health_score": "Punteggio Salute",
+  "dashboard_title": "Dashboard",
+  "inventory_title": "Inventario Vivo",
+  "inventory_total_value": "Valore Totale",
+  "maintenance_title": "Manutenzione Intelligente",
+  "trial_ends_in_days": "La prova termina in {{days}} giorni",
+  "trial_expired_title": "Periodo di Prova Scaduto",
+  "trial_expired_message": "Abbonati per sbloccare tutte le funzionalità e proteggere i tuoi abitanti.",
+  "subscribe_button": "Abbonati a {{price}}/mese",
+  "settings_title": "Impostazioni",
+  "language_selection": "Seleziona Lingua",
+  "login_label_email": "Username o Email",
+  "login_label_password": "Password",
+  "login_button_classic": "Accedi",
+  "login_signup_prompt": "Non hai un account?",
+  "login_signup_link": "Iscriviti",
+  "profile_title": "Profilo",
+  "logout_button": "Esci",
+  "add_tank_title": "Configura il tuo Acquario",
+  "add_tank_subtitle": "Inserisci i dettagli principali per iniziare.",
+  "tank_name_label": "Nome Acquario (es. Salotto)",
+  "tank_type_freshwater": "Acqua Dolce",
+  "tank_type_saltwater": "Acqua Marina",
+  "tank_type_brackish": "Acqua Salmastra",
+  "tank_volume_label": "Volume (in litri)",
+  "save_tank_button": "Salva e Continua",
+  "log_test_title": "Registra Nuovo Test",
+  "log_test_button": "Salva Risultati",
+  "log_test_button_short": "Registra Test",
+  "log_test_temp": "Temperatura",
+  "log_test_nitrates": "Nitrati (NO₃)",
+  "log_test_kh": "Durezza (KH)",
+  "chart_title": "Andamento Valori",
+  "chart_no_data": "Registra almeno due test per visualizzare il grafico.",
+  "log_temp_title": "Registra Temperatura",
+  "log_ph_title": "Registra pH",
+  "log_nitrates_title": "Registra Nitrati",
+  "log_kh_title": "Registra KH",
+  "log_history_title": "Storico Recente",
+  "reset_history_button": "Resetta Storico",
+  "reset_history_confirm": "Sei sicuro di voler eliminare tutti i dati per questo parametro? L'azione non è reversibile.",
+  "dashboard_inhabitants": "Abitanti",
+  "inhabitants_title": "Abitanti Acquario",
+  "inhabitants_fish": "Pesci",
+  "inhabitants_plants": "Piante",
+  "inhabitants_add_fish": "Aggiungi pesce...",
+  "inhabitants_add_plant": "Aggiungi pianta...",
+  "inhabitants_empty": "Nessun elemento aggiunto",
+  "add_button": "Aggiungi",
+  "paywall_feature_multitank": "Gestione Multi-vasca",
+  "paywall_feature_charts": "Grafici AI Avanzati",
+  "paywall_feature_notifications": "Notifiche Predittive",
+  "paywall_feature_unlimited": "Salvataggio Dati Illimitato",
+  "paywall_feature_support": "Supporto Prioritario",
+  "tank_name_duplicate_error": "Un acquario con questo nome esiste già"
 }
-
-const LocaleContext = createContext<LocaleContextType | undefined>(undefined);
-
-export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { i18n } = useTranslation();
-  const [locale, setLocale] = useState<LocaleConfig>(localesConfig[DEFAULT_LOCALE]);
-
-  useEffect(() => {
-    const handleLanguageChanged = (lng: string) => {
-      const languageCode = lng.split('-')[0];
-      const newLocale = localesConfig[languageCode] || localesConfig[DEFAULT_LOCALE];
-      setLocale(newLocale);
-    };
-
-    i18n.on('languageChanged', handleLanguageChanged);
-    handleLanguageChanged(i18n.language); // Set initial locale
-
-    return () => {
-      i18n.off('languageChanged', handleLanguageChanged);
-    };
-  }, [i18n]);
-
-  const formatCurrency = useCallback((value: number) => {
-    if (value === null || typeof value === 'undefined') {
-      return '--';
-    }
-    return new Intl.NumberFormat(i18n.language, {
-      style: 'currency',
-      currency: locale.currency.code,
-    }).format(value);
-  }, [i18n.language, locale.currency.code]);
-
-  const formatTemperature = useCallback((celsiusValue: number) => {
-    if (celsiusValue === null || typeof celsiusValue === 'undefined') {
-      return '--';
-    }
-    if (locale.temperature.unit === 'F') {
-      const fahrenheitValue = (celsiusValue * 9/5) + 32;
-      return `${fahrenheitValue.toFixed(1)}${locale.temperature.label}`;
-    }
-    return `${celsiusValue.toFixed(1)}${locale.temperature.label}`;
-  }, [locale.temperature.unit, locale.temperature.label]);
-
-  const value = {
-    locale,
-    formatCurrency,
-    formatTemperature,
-  };
-
-  return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
-};
-
-export const useLocale = (): LocaleContextType => {
-  const context = useContext(LocaleContext);
-  if (context === undefined) {
-    throw new Error('useLocale must be used within a LocaleProvider');
-  }
-  return context;
-};

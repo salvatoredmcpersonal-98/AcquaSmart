@@ -1,29 +1,37 @@
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
+import { useState, useLayoutEffect, RefObject } from 'react';
 
-import en from './locales/en.json';
-import it from './locales/it.json';
-import fr from './locales/fr.json';
-import es from './locales/es.json';
-import zh from './locales/zh.json';
+export function useElementWidth(ref: RefObject<HTMLElement>, deps: any[] = []): number {
+  const [width, setWidth] = useState(0);
 
-const resources = {
-  en: { translation: en },
-  it: { translation: it },
-  fr: { translation: fr },
-  es: { translation: es },
-  zh: { translation: zh },
-};
+  useLayoutEffect(() => {
+    if (!ref.current) {
+      return;
+    }
+    
+    const element = ref.current;
+    const updateWidth = () => {
+      const newWidth = element.offsetWidth;
+      if (newWidth > 0) {
+        setWidth(prev => prev === newWidth ? prev : newWidth);
+      }
+    };
 
-i18n
-  .use(initReactI18next)
-  .init({
-    resources,
-    lng: 'it', // Lingua predefinita
-    fallbackLng: 'en',
-    interpolation: {
-      escapeValue: false,
-    },
-  });
+    const observer = new ResizeObserver(entries => {
+      if (entries[0]) {
+        const newWidth = entries[0].contentRect.width;
+        if (newWidth > 0) {
+          setWidth(prev => prev === newWidth ? prev : newWidth);
+        }
+      }
+    });
 
-export default i18n;
+    observer.observe(element);
+    updateWidth();
+
+    return () => {
+      observer.unobserve(element);
+    };
+  }, [ref, ...deps]);
+
+  return width;
+}

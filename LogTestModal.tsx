@@ -1,102 +1,280 @@
-import { memo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { useLocale } from '../context/LocaleContext';
+import { AnimatePresence, motion } from 'motion/react';
+import Login from './components/Login';
+import Dashboard from './components/Dashboard';
+import Header from './components/Header';
+import Paywall from './components/Paywall';
+import Settings from './components/Settings';
+import AddTank from './components/AddTank';
+import { useTrial } from './hooks/useTrial';
+import usePersistentState from './hooks/usePersistentState';
 
-const CustomTooltip = memo(({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
-    const { t } = useTranslation();
-    const { formatTemperature } = useLocale();
+export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = usePersistentState('isAuthenticated', false);
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [tanks, setTanks] = usePersistentState('userTanks_v2', []);
+  const [currentTankIndex, setCurrentTankIndex] = usePersistentState('currentTankIndex', 0);
+  const [isAddingNewTank, setIsAddingNewTank] = useState(false);
+  const [testLogs, setTestLogs] = usePersistentState('userTestLogs_v3', []);
+  const initialInhabitants = {
+    fish: [],
+    plants: [],
+    hardscape: []
+  };
+  const [inhabitantsByTank, setInhabitantsByTank] = usePersistentState('userInhabitants_v6', {});
+  const [accessories, setAccessories] = usePersistentState('userAccessories_v3', []);
+  const [reminders, setReminders] = usePersistentState('userReminders_v3', []);
+  const trialState = useTrial();
 
-    if (active && payload && payload.length) {
-        const data = payload[0].payload; // The full data object for this point
-        return (
-            <div className="bg-zinc-700/80 backdrop-blur-sm border border-white/20 rounded-lg p-3 text-sm text-white">
-                <p className="font-bold mb-2">{new Date(data.timestamp).toLocaleDateString()}</p>
-                <ul className="space-y-1">
-                    {data.temp !== null && typeof data.temp !== 'undefined' && (
-                        <li style={{ color: '#f87171' }}>
-                            {t('log_test_temp')}: 
-                            <span className="font-semibold ml-2">{formatTemperature(data.temp)}</span>
-                        </li>
-                    )}
-                    {data.ph !== null && typeof data.ph !== 'undefined' && (
-                        <li style={{ color: '#38bdf8' }}>
-                            pH: 
-                            <span className="font-semibold ml-2">{data.ph.toFixed(1)}</span>
-                        </li>
-                    )}
-                    {data.nitrates !== null && typeof data.nitrates !== 'undefined' && (
-                        <li style={{ color: '#fbbf24' }}>
-                            {t('log_test_nitrates')}: 
-                            <span className="font-semibold ml-2">{data.nitrates} mg/L</span>
-                        </li>
-                    )}
-                </ul>
-            </div>
-        );
+  const [showRemindersFromHeader, setShowRemindersFromHeader] = useState(false);
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+    setCurrentPage('dashboard');
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setTanks([]); // This will also clear it from localStorage via the hook
+    setTestLogs([]);
+    setInhabitantsByTank({});
+    setAccessories([]);
+    setReminders([]);
+  };
+
+  const handleShowReminders = () => {
+    setCurrentPage('dashboard');
+    setShowRemindersFromHeader(true);
+  };
+
+  const handleTankAdded = (newTank) => {
+    const updatedTanks = [...tanks, { ...newTank, id: Date.now() }];
+    setTanks(updatedTanks);
+    setCurrentTankIndex(updatedTanks.length - 1);
+    setIsAddingNewTank(false);
+  };
+
+  const handleTestLogged = (partialLog) => {
+    const currentTankId = tanks[currentTankIndex]?.id;
+    if (!currentTankId) return;
+
+    setTestLogs(prevLogs => {
+      // Ensure we get the latest log by sorting by timestamp
+      const tankLogs = prevLogs
+        .filter(log => log.tankId === currentTankId)
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      
+      const latestLog = tankLogs[0] || { temp: null, ph: null, nitrates: null, kh: null };
+      const newLog = {
+        ...latestLog,
+        ...partialLog,
+        tankId: currentTankId,
+        timestamp: new Date().toISOString(),
+      };
+      return [newLog, ...prevLogs];
+    });
+  };
+
+  const handleDeleteTestLog = (timestamp) => {
+    setTestLogs(prevLogs => prevLogs.filter(log => log.timestamp !== timestamp));
+  };
+
+  const onResetHistory = (parameter) => {
+    const currentTankId = tanks[currentTankIndex]?.id;
+    if (!currentTankId) return;
+
+    setTestLogs(prevLogs => {
+      const updatedLogs = prevLogs.map(log => {
+        if (log.tankId === currentTankId) {
+          return {
+            ...log,
+            [parameter]: null,
+          };
+        }
+        return log;
+      });
+      const cleanedLogs = updatedLogs.filter(
+        log => log.temp != null || log.ph != null || log.nitrates != null
+      );
+      return cleanedLogs;
+    });
+  };
+
+  const onUpdateInhabitants = (newInhabitants) => {
+    const currentTankId = tanks[currentTankIndex]?.id;
+    if (!currentTankId) return;
+    setInhabitantsByTank(prev => ({
+      ...prev,
+      [currentTankId]: newInhabitants
+    }));
+  };
+
+  const onUpdateReminders = (newReminders) => {
+    const currentTankId = tanks[currentTankIndex]?.id;
+    if (!currentTankId) return;
+    
+    // We store all reminders in one array, but they have tankId
+    setReminders(prevReminders => {
+      const otherTanksReminders = prevReminders.filter(r => r.tankId !== currentTankId);
+      const updatedReminders = newReminders.map(r => ({ ...r, tankId: currentTankId }));
+      return [...otherTanksReminders, ...updatedReminders];
+    });
+  };
+
+  const onUpdateAccessories = (newAccessories) => {
+    const currentTankId = tanks[currentTankIndex]?.id;
+    if (!currentTankId) return;
+
+    setAccessories(prevAccessories => {
+      const otherTanksAccessories = prevAccessories.filter(a => a.tankId !== currentTankId);
+      const updatedAccessories = newAccessories.map(a => ({ ...a, tankId: currentTankId }));
+      return [...otherTanksAccessories, ...updatedAccessories];
+    });
+  };
+
+  const handleDeleteTank = (tankId) => {
+    if (tanks.length <= 1) return;
+    
+    const newTanks = tanks.filter(t => t.id !== tankId);
+    setTanks(newTanks);
+    setTestLogs(prevLogs => prevLogs.filter(l => l.tankId !== tankId));
+    setAccessories(prevAcc => prevAcc.filter(a => a.tankId !== tankId));
+    setReminders(prevRem => prevRem.filter(r => r.tankId !== tankId));
+    setInhabitantsByTank(prev => {
+      const newMap = { ...prev };
+      delete (newMap as any)[tankId];
+      return newMap;
+    });
+    
+    // Adjust current index if the deleted tank was the current one or after it
+    if (currentTankIndex >= newTanks.length) {
+      setCurrentTankIndex(Math.max(0, newTanks.length - 1));
+    }
+  };
+
+  const renderPage = () => {
+    if ((tanks.length === 0 || isAddingNewTank) && !trialState.isReadOnly) {
+      return (
+        <motion.div
+          key="add-tank"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          className="flex-1 flex flex-col"
+        >
+          <AddTank 
+            onTankAdded={handleTankAdded} 
+            onLogout={handleLogout} 
+            onCancel={tanks.length > 0 ? () => setIsAddingNewTank(false) : undefined}
+            existingTanks={tanks}
+          />
+        </motion.div>
+      );
     }
 
-    return null;
-});
-
-
-interface HistoryChartProps {
-    data: any[];
-}
-
-const HistoryChart = memo(({ data }: HistoryChartProps) => {
-    const { t } = useTranslation();
-
-    if (!data || data.length < 2) {
-        return (
-            <div className="h-80 flex items-center justify-center bg-white/5 border border-white/10 rounded-2xl">
-                <p className="text-white/50">{t('chart_no_data')}</p>
-            </div>
-        );
+    if (trialState.isReadOnly) {
+      return (
+        <motion.div
+          key="paywall"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="flex-1 flex flex-col"
+        >
+          <Paywall />
+        </motion.div>
+      );
     }
 
-    const formattedData = data.map(log => ({
-        ...log,
-        date: new Date(log.timestamp).toLocaleDateString(),
-    })).reverse();
-
-    const hasData = (key) => data.some(log => log[key] !== null && typeof log[key] !== 'undefined');
-
-    const hasTempData = hasData('temp');
-    const hasPhData = hasData('ph');
-    const hasNitratesData = hasData('nitrates');
+    // Ensure currentTankIndex is valid
+    const safeIndex = Math.min(Math.max(0, currentTankIndex), Math.max(0, tanks.length - 1));
+    const currentTank = tanks[safeIndex] || tanks[0];
+    const currentTankId = currentTank?.id;
+    
+    // Sort logs by timestamp to ensure [0] is always the latest
+    const currentTestLogs = testLogs
+      .filter(log => log.tankId === currentTankId)
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      
+    const currentInhabitants = (inhabitantsByTank as any)[currentTankId] || initialInhabitants;
+    const currentAccessories = accessories.filter(a => a.tankId === currentTankId);
+    const currentReminders = reminders.filter(r => r.tankId === currentTankId);
 
     return (
-        <div className="w-full h-full">
-            <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={formattedData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" vertical={false} />
-                    <XAxis 
-                        dataKey="date" 
-                        stroke="rgba(255, 255, 255, 0.5)" 
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                    />
-                    <YAxis 
-                        stroke="rgba(255, 255, 255, 0.5)" 
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend 
-                        wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} 
-                        iconType="circle"
-                    />
-                    
-                    {hasPhData && <Line connectNulls type="monotone" dataKey="ph" name="pH" stroke="#38bdf8" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />}
-                    {hasTempData && <Line connectNulls type="monotone" dataKey="temp" name={t('log_test_temp')} stroke="#f87171" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />}
-                    {hasNitratesData && <Line connectNulls type="monotone" dataKey="nitrates" name={t('log_test_nitrates')} stroke="#fbbf24" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />}
-                </LineChart>
-            </ResponsiveContainer>
-        </div>
+      <motion.div
+        key={`${currentPage}-${currentTankId}`}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.2 }}
+        className="flex-1 flex flex-col"
+      >
+        {currentPage === 'settings' ? (
+          <Settings 
+            onBack={() => setCurrentPage('dashboard')} 
+            onLogout={handleLogout} 
+            tanks={tanks}
+            onDeleteTank={handleDeleteTank}
+          />
+        ) : (
+          <Dashboard 
+            key={`dashboard-${currentTankId}`}
+            testLogs={currentTestLogs} 
+            onLogTest={handleTestLogged} 
+            handleDeleteTestLog={handleDeleteTestLog}
+            onResetHistory={onResetHistory}
+            inhabitants={currentInhabitants}
+            onUpdateInhabitants={onUpdateInhabitants}
+            reminders={currentReminders}
+            onUpdateReminders={onUpdateReminders}
+            accessories={currentAccessories}
+            onUpdateAccessories={onUpdateAccessories}
+            tanks={tanks}
+            currentTankIndex={safeIndex}
+            onSetCurrentTankIndex={setCurrentTankIndex}
+            onAddNewTank={() => setIsAddingNewTank(true)}
+            showRemindersInitial={showRemindersFromHeader}
+            onCloseRemindersInitial={() => setShowRemindersFromHeader(false)}
+          />
+        )}
+      </motion.div>
     );
-});
+  };
 
-export default HistoryChart;
+  if (!isAuthenticated) {
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="login"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <Login onLogin={handleLogin} />
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-zinc-950 flex flex-col font-sans selection:bg-emerald-500/30">
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <Header 
+          onSettingsClick={() => setCurrentPage('settings')} 
+          onLogoClick={() => setCurrentPage('dashboard')}
+          onRemindersClick={() => {
+            setCurrentPage('dashboard');
+            setShowRemindersFromHeader(true);
+          }}
+          reminders={reminders}
+        />
+      </div>
+      <main className="flex-1 pt-[65px] flex flex-col">
+        <AnimatePresence mode="wait">
+          {renderPage()}
+        </AnimatePresence>
+      </main>
+    </div>
+  );
+}

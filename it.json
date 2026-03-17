@@ -1,66 +1,68 @@
-import { useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { localesConfig, DEFAULT_LOCALE, LocaleConfig } from '../config/locales';
 
-// --- PSEUDOCODE / LOGIC DESCRIPTION ---
-// function checkTrialStatus(userCreatedAt) {
-//   const REGISTRATION_DATE = new Date(userCreatedAt);
-//   const CURRENT_DATE = new Date();
-//   const TRIAL_DURATION_DAYS = 21;
-//
-//   const daysSinceRegistration = (CURRENT_DATE - REGISTRATION_DATE) / (1000 * 60 * 60 * 24);
-//
-//   if (daysSinceRegistration > TRIAL_DURATION_DAYS) {
-//     return { isActive: false, isReadOnly: true, daysRemaining: 0 };
-//   }
-//
-//   const daysRemaining = Math.ceil(TRIAL_DURATION_DAYS - daysSinceRegistration);
-//
-//   if (daysRemaining === 1) {
-//     // Trigger push notification: "Your trial expires tomorrow..."
-//     // This should be handled by a backend service triggered by a cron job for reliability.
-//     console.log('PUSH NOTIFICATION: Trial expires tomorrow!');
-//   }
-//
-//   return { isActive: true, isReadOnly: false, daysRemaining };
-// }
+interface LocaleContextType {
+  locale: LocaleConfig;
+  formatCurrency: (value: number) => string;
+  formatTemperature: (celsiusValue: number) => string;
+}
 
-// --- REACT HOOK IMPLEMENTATION ---
+const LocaleContext = createContext<LocaleContextType | undefined>(undefined);
 
-// Mock user creation date. In a real app, this would come from the user object after login.
-const MOCK_USER_CREATED_AT = new Date();
-MOCK_USER_CREATED_AT.setDate(MOCK_USER_CREATED_AT.getDate() - 5); // User registered 5 days ago
-
-export const useTrial = (userCreatedAt: Date | null = MOCK_USER_CREATED_AT) => {
-  const [trialState, setTrialState] = useState({
-    isActive: true,
-    isReadOnly: false,
-    daysRemaining: 21,
-  });
+export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { i18n } = useTranslation();
+  const [locale, setLocale] = useState<LocaleConfig>(localesConfig[DEFAULT_LOCALE]);
 
   useEffect(() => {
-    if (!userCreatedAt) return;
-
-    const calculateTrialState = () => {
-      const registrationDate = new Date(userCreatedAt);
-      const currentDate = new Date();
-      const trialDurationDays = 21;
-
-      const diffTime = currentDate.getTime() - registrationDate.getTime();
-      const daysSinceRegistration = diffTime / (1000 * 60 * 60 * 24);
-
-      if (daysSinceRegistration > trialDurationDays) {
-        setTrialState({ isActive: false, isReadOnly: true, daysRemaining: 0 });
-        return;
-      }
-
-      const daysRemaining = Math.ceil(trialDurationDays - daysSinceRegistration);
-      setTrialState({ isActive: true, isReadOnly: false, daysRemaining });
+    const handleLanguageChanged = (lng: string) => {
+      const languageCode = lng.split('-')[0];
+      const newLocale = localesConfig[languageCode] || localesConfig[DEFAULT_LOCALE];
+      setLocale(newLocale);
     };
 
-    calculateTrialState();
-    const interval = setInterval(calculateTrialState, 1000 * 60 * 60); // Recalculate every hour
+    i18n.on('languageChanged', handleLanguageChanged);
+    handleLanguageChanged(i18n.language); // Set initial locale
 
-    return () => clearInterval(interval);
-  }, [userCreatedAt]);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChanged);
+    };
+  }, [i18n]);
 
-  return trialState;
+  const formatCurrency = useCallback((value: number) => {
+    if (value === null || typeof value === 'undefined') {
+      return '--';
+    }
+    return new Intl.NumberFormat(i18n.language, {
+      style: 'currency',
+      currency: locale.currency.code,
+    }).format(value);
+  }, [i18n.language, locale.currency.code]);
+
+  const formatTemperature = useCallback((celsiusValue: number) => {
+    if (celsiusValue === null || typeof celsiusValue === 'undefined') {
+      return '--';
+    }
+    if (locale.temperature.unit === 'F') {
+      const fahrenheitValue = (celsiusValue * 9/5) + 32;
+      return `${fahrenheitValue.toFixed(1)}${locale.temperature.label}`;
+    }
+    return `${celsiusValue.toFixed(1)}${locale.temperature.label}`;
+  }, [locale.temperature.unit, locale.temperature.label]);
+
+  const value = {
+    locale,
+    formatCurrency,
+    formatTemperature,
+  };
+
+  return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
+};
+
+export const useLocale = (): LocaleContextType => {
+  const context = useContext(LocaleContext);
+  if (context === undefined) {
+    throw new Error('useLocale must be used within a LocaleProvider');
+  }
+  return context;
 };

@@ -1,39 +1,28 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+import { useState, useEffect } from 'react';
 
-@import "tailwindcss";
-@import "react-grid-layout/css/styles.css";
-@import "react-resizable/css/styles.css";
+// A custom hook to keep state in sync with localStorage
+function usePersistentState<T>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [state, setState] = useState<T>(() => {
+    try {
+      const storedValue = window.localStorage.getItem(key);
+      // If a value is stored, parse it. Otherwise, use the default value.
+      return storedValue ? JSON.parse(storedValue) : defaultValue;
+    } catch (error) {
+      console.error(`Error reading localStorage key “${key}”:`, error);
+      return defaultValue;
+    }
+  });
 
-@layer utilities {
-  @keyframes wiggle {
-    0% { transform: rotate(0deg); }
-    25% { transform: rotate(0.5deg); }
-    75% { transform: rotate(-0.5deg); }
-    100% { transform: rotate(0deg); }
-  }
+  useEffect(() => {
+    try {
+      // Every time the state changes, save it to localStorage.
+      window.localStorage.setItem(key, JSON.stringify(state));
+    } catch (error) {
+      console.error(`Error setting localStorage key “${key}”:`, error);
+    }
+  }, [key, state]);
 
-  .animate-wiggle {
-    animation: wiggle 0.3s infinite;
-  }
+  return [state, setState];
 }
 
-body {
-  @apply bg-zinc-900 font-sans antialiased;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-@layer utilities {
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    @apply bg-transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-white/10 rounded-full;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-white/20;
-  }
-}
+export default usePersistentState;
