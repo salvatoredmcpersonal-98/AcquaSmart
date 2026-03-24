@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, User, LogOut, Trash2, Box, X, AlertTriangle, Settings2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -18,10 +18,15 @@ const mockUser = {
   email: 'mario.rossi@example.com',
 };
 
-export default function Settings({ onBack, onLogout, tanks = [], onDeleteTank, onUpdateTank }) {
+export default function Settings({ onBack, onLogout, tanks = [], onDeleteTank, onUpdateTank, setIsEditingTank }) {
   const { t, i18n } = useTranslation();
   const [tankToDelete, setTankToDelete] = useState(null);
   const [tankToEdit, setTankToEdit] = useState(null);
+
+  useEffect(() => {
+    setIsEditingTank(!!tankToEdit || !!tankToDelete);
+    return () => setIsEditingTank(false);
+  }, [tankToEdit, tankToDelete, setIsEditingTank]);
 
   const changeLanguage = (lng) => {
     i18n.changeLanguage(lng);
@@ -63,19 +68,19 @@ export default function Settings({ onBack, onLogout, tanks = [], onDeleteTank, o
 
       {/* Manage Tanks Section */}
       <div className="bg-zinc-800/50 border border-white/10 rounded-2xl p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-3"><Box size={22} /> Gestione Acquari</h2>
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-3"><Box size={22} /> {t('settings_manage_tanks')}</h2>
         <div className="space-y-3">
           {tanks.map((tank) => (
             <div key={tank.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
               <div>
                 <p className="font-bold">{tank.name}</p>
-                <p className="text-xs text-white/40 uppercase tracking-wider">{tank.volume} Litri • {tank.type}</p>
+                <p className="text-xs text-white/40 uppercase tracking-wider">{tank.volume} {t('settings_liters')} • {tank.type}</p>
               </div>
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setTankToEdit(tank)}
                   className="p-2 text-white/20 hover:text-emerald-400 transition-colors"
-                  title="Modifica"
+                  title={t('settings_edit_tooltip')}
                 >
                   <Settings2 size={18} />
                 </button>
@@ -83,7 +88,7 @@ export default function Settings({ onBack, onLogout, tanks = [], onDeleteTank, o
                   <button 
                     onClick={() => setTankToDelete(tank)}
                     className="p-2 text-white/20 hover:text-red-400 transition-colors"
-                    title="Elimina"
+                    title={t('settings_delete_tooltip')}
                   >
                     <Trash2 size={18} />
                   </button>
@@ -143,14 +148,13 @@ export default function Settings({ onBack, onLogout, tanks = [], onDeleteTank, o
                   <AlertTriangle size={24} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Elimina Acquario</h3>
-                  <p className="text-sm text-white/60">L'azione è irreversibile</p>
+                  <h3 className="text-xl font-bold text-white">{t('settings_delete_confirm_title')}</h3>
+                  <p className="text-sm text-white/60">{t('settings_delete_confirm_subtitle')}</p>
                 </div>
               </div>
 
               <p className="text-white/80 mb-8 leading-relaxed">
-                Sei sicuro di voler eliminare l'acquario <span className="text-white font-bold">"{tankToDelete.name}"</span>? 
-                Tutti i dati associati, inclusi i log dei test e gli abitanti, verranno persi definitivamente.
+                {t('settings_delete_confirm_message', { name: tankToDelete.name })}
               </p>
 
               <div className="flex gap-3">
@@ -158,13 +162,13 @@ export default function Settings({ onBack, onLogout, tanks = [], onDeleteTank, o
                   onClick={() => setTankToDelete(null)}
                   className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-colors"
                 >
-                  Annulla
+                  {t('settings_delete_cancel_button')}
                 </button>
                 <button
                   onClick={handleDeleteConfirm}
                   className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-red-500/20"
                 >
-                  Elimina
+                  {t('settings_delete_confirm_button')}
                 </button>
               </div>
             </motion.div>

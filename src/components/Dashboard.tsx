@@ -80,7 +80,8 @@ export default function Dashboard({
   showRemindersInitial, 
   onCloseRemindersInitial,
   isBasicMode = false,
-  onShowPaywall
+  onShowPaywall,
+  setIsEditingTank
 }) {
   const { t } = useTranslation();
   const { formatCurrency, formatTemperature } = useLocale();
@@ -92,6 +93,12 @@ export default function Dashboard({
   const [showAccessoriesModal, setShowAccessoriesModal] = useState(false);
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+
+  useEffect(() => {
+    // Hide AI Consultant when any editing/config modal is open, EXCEPT for the validation report
+    setIsEditingTank(!!editingParam || showInhabitantsModal || showRemindersModal || showAccessoriesModal);
+    return () => setIsEditingTank(false);
+  }, [editingParam, showInhabitantsModal, showRemindersModal, showAccessoriesModal, setIsEditingTank]);
 
   useEffect(() => {
     if (showRemindersInitial) {
@@ -248,7 +255,7 @@ export default function Dashboard({
       {
         ph: latestLog.ph || 7,
         kh: latestLog.kh || 6,
-        temp: latestLog.temp || 25,
+        temp: latestLog.temp !== null && typeof latestLog.temp !== 'undefined' ? latestLog.temp : (currentTank?.baseTemp || 25),
         gh: 10,
         nitrates: latestLog.nitrates || 0
       }
@@ -261,7 +268,7 @@ export default function Dashboard({
       status: 'OTTIMO' as const, 
       color: '#00FF00', 
       riskFactors: [],
-      quickAdvice: "L'ecosistema è in equilibrio. Continua con la manutenzione regolare."
+      quickAdvice: t('dashboard_health_excellent_advice')
     };
     return calculateHealthScore(
       testLogs, 
@@ -341,7 +348,7 @@ export default function Dashboard({
               <div className="flex flex-col items-center gap-2">
                 <span className="text-emerald-400 font-black text-2xl mb-2">+</span>
                 <span className="[writing-mode:vertical-rl] rotate-180 text-emerald-400 font-black uppercase tracking-[0.4em] text-xs whitespace-nowrap">
-                  aggiungi acquario
+                  {t('dashboard_add_tank_peek')}
                 </span>
               </div>
             )}
@@ -388,11 +395,16 @@ export default function Dashboard({
             <div className="relative">
               <button 
                 onClick={() => setShowTankSelector(!showTankSelector)}
-                className="flex items-center group"
+                className="flex flex-col items-center group"
               >
                 <h1 className="text-xl sm:text-2xl font-medium text-white/60 uppercase tracking-[0.3em] group-hover:text-white transition-colors">
                   {currentTank?.name}
                 </h1>
+                {currentTank?.type && (
+                  <p className="text-[10px] sm:text-xs text-white/40 uppercase tracking-[0.2em] font-bold mt-1 group-hover:text-white/60 transition-colors">
+                    {currentTank.type}
+                  </p>
+                )}
               </button>
 
               <AnimatePresence>
@@ -437,7 +449,7 @@ export default function Dashboard({
                           className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-500/10 text-emerald-400 transition-all"
                         >
                           <Plus size={18} />
-                          <span className="font-bold uppercase tracking-wider text-xs">Nuovo Acquario</span>
+                          <span className="font-bold uppercase tracking-wider text-xs">{t('dashboard_new_tank_button')}</span>
                         </button>
                       </div>
                     </motion.div>
@@ -476,7 +488,7 @@ export default function Dashboard({
                     validationResult?.status === 'Warning' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' :
                     'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
                   }`}
-                  title="Analisi Setup"
+                  title={t('dashboard_analysis_setup')}
                 >
                   <ShieldCheck size={20} />
                 </button>
@@ -533,15 +545,15 @@ export default function Dashboard({
                   )}
                   <StatCard 
                     icon={<Bell size={20} className={overdueReminders > 0 ? "text-red-400 animate-pulse" : "text-emerald-300"} />} 
-                    label="Promemoria" 
+                    label={t('dashboard_reminders')} 
                     value={mostUrgentReminder ? (
                       <span className="flex flex-col items-center">
                         <span className="truncate leading-tight">{mostUrgentReminder.task}</span>
                         <span className="text-[10px] sm:text-xs opacity-50 font-medium mt-0.5">
-                          Scade: {new Date(mostUrgentReminder.nextDue).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                          {t('expires_on')}: {new Date(mostUrgentReminder.nextDue).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
                         </span>
                       </span>
-                    ) : 'Nessuno'} 
+                    ) : t('none')} 
                     colorClass={overdueReminders > 0 ? "bg-red-500/20" : "bg-emerald-500/20"} 
                     onClick={() => setShowRemindersModal(true)}
                     isEditMode={isEditMode}
@@ -570,7 +582,7 @@ export default function Dashboard({
                   <StatCard 
                     icon={<Thermometer size={20} className="text-red-300" />} 
                     label={t('log_test_temp')} 
-                    value={latestLog.temp ? formatTemperature(latestLog.temp) : '--'} 
+                    value={latestLog.temp !== null && typeof latestLog.temp !== 'undefined' ? formatTemperature(latestLog.temp) : (currentTank?.baseTemp ? formatTemperature(currentTank.baseTemp) : '--')} 
                     colorClass="bg-red-500/20" 
                     onClick={() => setEditingParam('temp')}
                     isEditMode={isEditMode}
@@ -666,7 +678,7 @@ export default function Dashboard({
                       <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center mb-2">
                         <Leaf size={24} className="text-emerald-400" />
                       </div>
-                      <span className="text-white/60 text-xs font-medium uppercase tracking-wider">{t('inhabitants_plants') || 'Piante'}</span>
+                      <span className="text-white/60 text-xs font-medium uppercase tracking-wider">{t('inhabitants_plants')}</span>
                       <p className="text-2xl sm:text-3xl font-bold text-white mt-1">
                         {inhabitants.plants.reduce((acc, p) => acc + (p.quantity || 1), 0)}
                       </p>
@@ -680,7 +692,7 @@ export default function Dashboard({
                       <div className="w-12 h-12 rounded-full bg-orange-500/20 flex items-center justify-center mb-2">
                         <Fish size={24} className="text-orange-400" />
                       </div>
-                      <span className="text-white/60 text-xs font-medium uppercase tracking-wider">{t('inhabitants_fish') || 'Pesci'}</span>
+                      <span className="text-white/60 text-xs font-medium uppercase tracking-wider">{t('inhabitants_fish')}</span>
                       <p className="text-2xl sm:text-3xl font-bold text-white mt-1">
                         {inhabitants.fish.reduce((acc, f) => acc + (f.quantity || 1), 0)}
                       </p>
@@ -694,7 +706,7 @@ export default function Dashboard({
                       <div className="w-12 h-12 rounded-full bg-sky-500/20 flex items-center justify-center mb-2">
                         <Box size={24} className="text-sky-400" />
                       </div>
-                      <span className="text-white/60 text-xs font-medium uppercase tracking-wider">Allestimento</span>
+                      <span className="text-white/60 text-xs font-medium uppercase tracking-wider">{t('dashboard_hardscape_label')}</span>
                       <p className="text-2xl sm:text-3xl font-bold text-white mt-1">
                         {inhabitants.hardscape?.reduce((acc, h) => acc + (h.quantity || 1), 0) || 0}
                       </p>
@@ -715,8 +727,8 @@ export default function Dashboard({
                   )}
                   <StatCard 
                     icon={<Lamp size={20} className="text-indigo-300" />} 
-                    label="Accessori" 
-                    value={accessories.length > 0 ? `${accessories.length} Elementi` : 'Nessuno'} 
+                    label={t('dashboard_accessories')} 
+                    value={accessories.length > 0 ? t('elements_count', { count: accessories.length }) : t('none')} 
                     colorClass="bg-indigo-500/20" 
                     onClick={() => setShowAccessoriesModal(true)}
                     isEditMode={isEditMode}
@@ -770,6 +782,7 @@ export default function Dashboard({
           inhabitants={inhabitants}
           onUpdate={onUpdateInhabitants}
           onClose={() => setShowInhabitantsModal(false)}
+          latestLog={latestLog}
         />
       )}
 
@@ -813,7 +826,7 @@ export default function Dashboard({
               <div className="p-6 border-b border-white/10 flex justify-between items-center">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                   <ShieldCheck className="text-indigo-400" />
-                  Report Validazione Biologica
+                  {t('validation_report_modal_title')}
                 </h2>
                 <button onClick={() => setShowValidationModal(false)} className="text-white/40 hover:text-white">
                   <X size={24} />

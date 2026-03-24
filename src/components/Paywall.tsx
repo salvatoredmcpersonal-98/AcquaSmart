@@ -34,8 +34,7 @@ export default function Paywall({ tankType, onContinueBasic }: PaywallProps) {
             animate={{ opacity: 1, y: 0 }}
             className="text-2xl sm:text-3xl font-bold leading-tight max-w-sm"
           >
-            Proteggi il tuo investimento e la<br />
-            la vita nel tuo acquario.
+            {t('paywall_hero_title')}
           </motion.h1>
         </div>
       </div>
@@ -52,8 +51,8 @@ export default function Paywall({ tankType, onContinueBasic }: PaywallProps) {
           >
             <div className="mb-4">
               <Hand className="text-amber-500/60 mb-2" size={32} strokeWidth={1.5} />
-              <h3 className="text-xl font-bold">Piano Essential</h3>
-              <p className="text-lg font-medium text-white/90">- 2,50€ <span className="text-sm text-white/40">/ mese</span></p>
+              <h3 className="text-xl font-bold">{t('paywall_essential_title')}</h3>
+              <p className="text-lg font-medium text-white/90">- {t('paywall_essential_price')} <span className="text-sm text-white/40">/ {t('month') || 'mese'}</span></p>
             </div>
 
             <div className="flex gap-4 mb-6">
@@ -68,19 +67,19 @@ export default function Paywall({ tankType, onContinueBasic }: PaywallProps) {
             <ul className="space-y-2 text-sm text-white/70">
               <li className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-white/40 rounded-full" />
-                Manutenzione Manuale
+                {t('paywall_essential_feature_manual')}
               </li>
               <li className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-white/40 rounded-full" />
-                Database Base
+                {t('paywall_essential_feature_base_db')}
               </li>
               <li className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-white/40 rounded-full" />
-                Database
+                {t('paywall_essential_feature_db')}
               </li>
               <li className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-white/40 rounded-full" />
-                Senza Prevenzione
+                {t('paywall_essential_feature_no_prevention')}
               </li>
             </ul>
           </motion.div>
@@ -94,32 +93,32 @@ export default function Paywall({ tankType, onContinueBasic }: PaywallProps) {
           >
             <div className="absolute top-4 right-4 bg-emerald-500 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 uppercase tracking-wider">
               <Star size={10} fill="currentColor" />
-              Scelta Sicura
+              {t('paywall_smart_guardian_badge')}
             </div>
 
             <div className="mb-4">
               <ShieldCheck className="text-emerald-400 mb-2" size={32} strokeWidth={1.5} />
-              <h3 className="text-xl font-bold text-emerald-400">Piano Smart Guardian</h3>
-              <p className="text-lg font-medium text-white/90">- 3,99€ <span className="text-sm text-white/40">/ mese</span></p>
-              <p className="text-[10px] text-white/30 uppercase tracking-widest mt-1">IL PIÙ CHEELTO</p>
+              <h3 className="text-xl font-bold text-emerald-400">{t('paywall_smart_guardian_title')}</h3>
+              <p className="text-lg font-medium text-white/90">- {t('paywall_smart_guardian_price')} <span className="text-sm text-white/40">/ {t('month') || 'mese'}</span></p>
+              <p className="text-[10px] text-white/30 uppercase tracking-widest mt-1">{t('paywall_smart_guardian_tagline')}</p>
             </div>
 
             <ul className="space-y-3 text-sm text-white/90 mb-6">
               <li className="flex items-start gap-2">
                 <Check size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-                Algoritmo Predittiv di Salute
+                {t('paywall_smart_guardian_feature_predictive')}
               </li>
               <li className="flex items-start gap-2">
                 <Check size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-                Automationi Ciclo Manutenzion
+                {t('paywall_smart_guardian_feature_automation')}
               </li>
               <li className="flex items-start gap-2">
                 <Check size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-                Protezion Capitale
+                {t('paywall_smart_guardian_feature_capital')}
               </li>
               <li className="flex items-start gap-2">
                 <Check size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-                Guida all'Acquisto
+                {t('paywall_smart_guardian_feature_guide')}
               </li>
             </ul>
 
@@ -135,14 +134,14 @@ export default function Paywall({ tankType, onContinueBasic }: PaywallProps) {
         {/* Action Buttons */}
         <div className="mt-8 flex flex-col items-center gap-4">
           <button className="w-full bg-emerald-500 hover:bg-emerald-600 transition-all duration-300 text-white font-bold py-4 rounded-2xl text-xl shadow-lg shadow-emerald-500/20 active:scale-[0.98]">
-            Attiva Protezione Totale
+            {t('paywall_activate_button')}
           </button>
           
           <button 
             onClick={onContinueBasic}
             className="text-white/40 hover:text-white/60 transition-colors text-sm font-medium"
           >
-            Oppure continua con il piano Basic
+            {t('paywall_continue_basic_button')}
           </button>
         </div>
       </div>

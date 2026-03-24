@@ -51,7 +51,7 @@ export default function Login({ onLogin }) {
 
           <div className="relative flex py-3 items-center">
               <div className="flex-grow border-t border-white/10"></div>
-              <span className="flex-shrink mx-4 text-white/40 text-sm">OR</span>
+              <span className="flex-shrink mx-4 text-white/40 text-sm">{t('login_or_separator')}</span>
               <div className="flex-grow border-t border-white/10"></div>
           </div>
 

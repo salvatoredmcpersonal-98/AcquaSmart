@@ -5,13 +5,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FISH_MASTER_DATA } from '../constants/masterData';
 
 const TASK_SUGGESTIONS = [
-  { name: 'Rabbocco acqua', icon: '💧', lucide: Droplets },
-  { name: 'Fertilizzante', icon: '🌱', lucide: Leaf },
-  { name: 'Cambio acqua', icon: '✨', lucide: Sparkles },
-  { name: 'Controllo Valori', icon: '🧪', lucide: TestTube2 },
-  { name: 'Pulizia Filtro', icon: '🧼', lucide: Waves },
-  { name: 'Gravidanza Pesci', icon: '🤰', lucide: Heart },
-  { name: 'Altro', icon: '📝', lucide: Info },
+  { name: 'task_suggestion_water_topup', icon: '💧', lucide: Droplets },
+  { name: 'task_suggestion_fertilizer', icon: '🌱', lucide: Leaf },
+  { name: 'task_suggestion_water_change', icon: '✨', lucide: Sparkles },
+  { name: 'task_suggestion_water_test', icon: '🧪', lucide: TestTube2 },
+  { name: 'task_suggestion_filter_cleaning', icon: '🧼', lucide: Waves },
+  { name: 'task_suggestion_fish_breeding', icon: '🤰', lucide: Heart },
+  { name: 'task_suggestion_other', icon: '📝', lucide: Info },
 ];
 
 export default function RemindersModal({ reminders, onUpdate, onClose, initialFilter = 'all' }) {
@@ -26,7 +26,7 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
   const isNotificationMode = initialFilter === 'overdue';
 
   useEffect(() => {
-    if (newTask === 'Gravidanza Pesci' && selectedSpecies) {
+    if (newTask === 'task_suggestion_fish_breeding' && selectedSpecies) {
       const species = FISH_MASTER_DATA.find(f => f.name === selectedSpecies);
       if (species && species.breeding) {
         setNewDescription(species.breeding.description);
@@ -48,9 +48,9 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
     if (!newTask.trim()) return;
 
     const start = new Date(startDate);
-    const taskName = newTask === 'Gravidanza Pesci' && selectedSpecies 
-      ? `Gravidanza: ${selectedSpecies}` 
-      : newTask;
+    const taskName = newTask === 'task_suggestion_fish_breeding' && selectedSpecies 
+      ? `${t('task_suggestion_fish_breeding')}: ${selectedSpecies}` 
+      : (t(newTask) === newTask ? newTask : t(newTask));
 
     const newReminder = {
       id: Date.now(),
@@ -114,7 +114,7 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
               <div className="bg-emerald-500/20 p-2 rounded-xl">
                 <Bell className="text-emerald-400" size={20} />
               </div>
-              {isNotificationMode ? 'Centro Notifiche' : 'Promemoria'}
+              {isNotificationMode ? t('notifications_center_title') : t('reminders_modal_title')}
             </h2>
             <button 
               onClick={onClose}
@@ -138,7 +138,7 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
                 >
                   <div>
                     <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2 ml-1">
-                      Scegli un'operazione
+                      {t('add_reminder_form_title')}
                     </label>
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       {TASK_SUGGESTIONS.map((suggestion) => (
@@ -147,7 +147,7 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
                           type="button"
                           onClick={() => {
                             setNewTask(suggestion.name);
-                            if (suggestion.name !== 'Gravidanza Pesci') {
+                            if (suggestion.name !== 'task_suggestion_fish_breeding') {
                               setSelectedSpecies('');
                             }
                           }}
@@ -158,12 +158,12 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
                           }`}
                         >
                           <span>{suggestion.icon}</span>
-                          {suggestion.name}
+                          {t(suggestion.name)}
                         </button>
                       ))}
                     </div>
 
-                    {newTask === 'Gravidanza Pesci' && (
+                    {newTask === 'task_suggestion_fish_breeding' && (
                       <motion.div 
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -171,14 +171,14 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
                       >
                         <div>
                           <label className="block text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2 ml-1">
-                            Seleziona la specie
+                            {t('select_species_label')}
                           </label>
                           <select
                             value={selectedSpecies}
                             onChange={(e) => setSelectedSpecies(e.target.value)}
                             className="w-full bg-white/5 border border-emerald-500/30 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm appearance-none cursor-pointer"
                           >
-                            <option value="" disabled className="bg-zinc-900">Scegli un pesce...</option>
+                            <option value="" disabled className="bg-zinc-900">{t('select_species_placeholder')}</option>
                             {FISH_MASTER_DATA.filter(f => f.breeding).map(fish => (
                               <option key={fish.name} value={fish.name} className="bg-zinc-900">
                                 {fish.name} ({fish.breeding?.type})
@@ -197,7 +197,7 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
                               <Info size={14} />
                             </div>
                             <div className="space-y-1">
-                              <p className="text-xs font-bold text-emerald-400">Info Riproduzione</p>
+                              <p className="text-xs font-bold text-emerald-400">{t('breeding_info_title')}</p>
                               <p className="text-[11px] text-white/70 leading-relaxed">
                                 {FISH_MASTER_DATA.find(f => f.name === selectedSpecies)?.breeding?.description}
                               </p>
@@ -209,28 +209,28 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
 
                     <input 
                       type="text"
-                      value={newTask}
+                      value={t(newTask) === newTask ? newTask : t(newTask)}
                       onChange={(e) => setNewTask(e.target.value)}
-                      placeholder="Oppure scrivi qui..."
+                      placeholder={t('custom_task_placeholder')}
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-1.5 ml-1">
-                      Descrizione (opzionale)
+                      {t('description_label')}
                     </label>
                     <textarea 
                       value={newDescription}
                       onChange={(e) => setNewDescription(e.target.value)}
-                      placeholder="Aggiungi dettagli..."
+                      placeholder={t('description_placeholder')}
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm resize-none h-20"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-1.5 ml-1">
-                      Data di inizio
+                      {t('start_date_label')}
                     </label>
                     <input 
                       type="date"
@@ -242,7 +242,7 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
 
                   <div>
                     <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-1.5 ml-1">
-                      Ogni quanti giorni?
+                      {t('frequency_label')}
                     </label>
                     <div className="flex items-center gap-4">
                       <input 
@@ -254,7 +254,7 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
                         className="flex-grow accent-emerald-500"
                       />
                       <span className="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-lg font-bold min-w-[60px] text-center">
-                        {newFrequency} gg
+                        {newFrequency} {t('frequency_unit')}
                       </span>
                     </div>
                   </div>
@@ -264,13 +264,13 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
                       onClick={() => setShowAddForm(false)}
                       className="flex-1 py-3 rounded-xl font-bold text-white/60 hover:bg-white/5 transition-colors"
                     >
-                      Annulla
+                      {t('cancel_button')}
                     </button>
                     <button 
                       type="submit"
                       className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
                     >
-                      Salva
+                      {t('save_button')}
                     </button>
                   </div>
                 </motion.form>
@@ -282,7 +282,7 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
                   className="w-full bg-white/5 border border-dashed border-white/20 hover:border-emerald-500/50 hover:bg-emerald-500/5 py-4 rounded-2xl transition-all flex items-center justify-center gap-2 text-white/40 hover:text-emerald-400 mb-6 group"
                 >
                   <Plus size={20} className="group-hover:scale-110 transition-transform" />
-                  <span className="font-bold">Nuovo Promemoria</span>
+                  <span className="font-bold">{t('new_reminder_button')}</span>
                 </motion.button>
               )
             )}
@@ -293,7 +293,7 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
               <div className="text-center py-12">
                 <Bell size={48} className="mx-auto text-white/10 mb-4" />
                 <p className="text-white/40 italic">
-                  {isNotificationMode ? 'Nessun avviso urgente' : 'Nessun promemoria impostato'}
+                  {isNotificationMode ? t('no_urgent_notifications') : t('no_reminders_set')}
                 </p>
               </div>
             ) : (
@@ -326,10 +326,10 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
                           )}
                           <div className="flex items-center gap-3 mt-2">
                             <span className="text-[9px] text-white/30 font-bold uppercase tracking-wider flex items-center gap-1">
-                              <Clock size={10} /> Ogni {reminder.frequency} gg
+                              <Clock size={10} /> {t('every_days', { days: reminder.frequency })}
                             </span>
                             <span className={`text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 ${overdue ? 'text-red-400' : 'text-white/30'}`}>
-                              <Calendar size={10} /> Scade: {formatDate(reminder.nextDue)}
+                              <Calendar size={10} /> {t('expires_label')} {formatDate(reminder.nextDue)}
                             </span>
                           </div>
                         </div>
@@ -353,7 +353,7 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
                       }`}
                     >
                       <CheckCircle2 size={14} />
-                      {isNotificationMode ? 'Eseguito' : 'Segna come fatto'}
+                      {isNotificationMode ? t('done_button') : t('mark_as_done_button')}
                     </button>
                   </motion.div>
                 );

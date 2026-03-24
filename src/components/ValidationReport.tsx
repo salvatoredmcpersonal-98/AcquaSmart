@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertCircle, CheckCircle2, Info, Zap, Droplets, Activity, LayoutGrid, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
@@ -12,14 +13,15 @@ interface Props {
 }
 
 export default function ValidationReport({ result, testLogs, healthScore }: Props) {
+  const { t } = useTranslation();
   const radarData = useMemo(() => [
-    { subject: 'Chimica', A: result.checks.chemical.status === 'ok' ? 100 : 20, fullMark: 100 },
-    { subject: 'Luce', A: result.checks.lighting.status === 'ok' ? 100 : 20, fullMark: 100 },
-    { subject: 'Alghe', A: result.checks.algae.status === 'ok' ? 100 : 50, fullMark: 100 },
-    { subject: 'Etologia', A: result.checks.ethological.status === 'ok' ? 100 : 20, fullMark: 100 },
-    { subject: 'Sessi', A: result.checks.sexRatio.status === 'ok' ? 100 : result.checks.sexRatio.status === 'warning' ? 50 : 20, fullMark: 100 },
-    { subject: 'Carico', A: result.checks.load.status === 'ok' ? 100 : 50, fullMark: 100 },
-  ], [result]);
+    { subject: t('validation_subject_chemistry'), A: result.checks.chemical.status === 'ok' ? 100 : 20, fullMark: 100 },
+    { subject: t('validation_subject_light'), A: result.checks.lighting.status === 'ok' ? 100 : 20, fullMark: 100 },
+    { subject: t('validation_subject_algae'), A: result.checks.algae.status === 'ok' ? 100 : 50, fullMark: 100 },
+    { subject: t('validation_subject_ethology'), A: result.checks.ethological.status === 'ok' ? 100 : 20, fullMark: 100 },
+    { subject: t('validation_subject_sex'), A: result.checks.sexRatio.status === 'ok' ? 100 : result.checks.sexRatio.status === 'warning' ? 50 : 20, fullMark: 100 },
+    { subject: t('validation_subject_load'), A: result.checks.load.status === 'ok' ? 100 : 50, fullMark: 100 },
+  ], [result, t]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -27,6 +29,23 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
       case 'Warning': return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
       case 'Errore Critico': return 'text-red-400 bg-red-500/10 border-red-500/20';
       default: return 'text-zinc-400 bg-zinc-500/10 border-zinc-500/20';
+    }
+  };
+
+  const translateStatus = (status: string) => {
+    switch (status) {
+      case 'Ottimale': return t('status_optimal');
+      case 'Warning': return t('status_warning');
+      case 'Errore Critico': return t('status_critical_error');
+      case 'Ottimo': return t('status_excellent');
+      case 'Giallo': return t('status_yellow');
+      case 'Rosso': return t('status_red');
+      case 'OTTIMO': return t('status_excellent');
+      case 'STABILE': return t('status_stable');
+      case 'SQUILIBRATO': return t('status_unbalanced');
+      case 'CRITICO': return t('status_critical');
+      case 'NESSUN DATO': return t('status_no_data');
+      default: return status;
     }
   };
 
@@ -40,18 +59,18 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
           </div>
           <div>
             <h3 className="font-black text-xl uppercase tracking-tighter">
-              Biological Guardian Analysis
+              {translateStatus(result.status)}
             </h3>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/20 text-white uppercase tracking-widest">
                 {result.ecosystemType}
               </span>
-              <p className="text-xs font-medium opacity-90 italic">"La vita dei tuoi pesci dipende dal mio sguardo."</p>
+              <p className="text-xs font-medium opacity-90 italic">"{t('validation_tagline')}"</p>
             </div>
           </div>
         </div>
         <div className="text-right hidden sm:block">
-          <p className="text-[10px] uppercase font-bold opacity-50">Data Analisi</p>
+          <p className="text-[10px] uppercase font-bold opacity-50">{t('validation_date_label')}</p>
           <p className="text-xs font-mono">{new Date().toLocaleDateString()}</p>
         </div>
       </div>
@@ -62,7 +81,7 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
           <LayoutGrid size={80} />
         </div>
         <h4 className="text-xs font-bold text-indigo-400 uppercase mb-3 flex items-center gap-2 tracking-widest">
-          <Info size={14} /> 1. ANALISI BIOTIPO
+          <Info size={14} /> {t('validation_biotype_title')}
         </h4>
         <p className="text-lg font-bold text-white leading-tight">
           {result.biotypeAnalysis}
@@ -74,7 +93,7 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
         {/* Score Card */}
         <div className="bg-zinc-800/50 p-6 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center relative">
           <h4 className="text-xs font-bold text-white/40 uppercase mb-4 absolute top-4 left-4 tracking-widest">
-            2. STATO DI SALUTE
+            {t('validation_health_status_title')}
           </h4>
           <div className="relative mt-4">
             <svg className="w-32 h-32 transform -rotate-90">
@@ -102,18 +121,18 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-4xl font-black text-white">{healthScore?.score || 0}</span>
-              <span className="text-[10px] font-bold text-white/40 uppercase">Punti</span>
+              <span className="text-[10px] font-bold text-white/40 uppercase">{t('validation_points_label')}</span>
             </div>
           </div>
           <p className="mt-4 font-bold text-sm uppercase tracking-widest" style={{ color: healthScore?.color }}>
-            {healthScore?.status || 'ANALISI...'}
+            {healthScore?.status ? translateStatus(healthScore.status) : t('validation_analyzing')}
           </p>
         </div>
 
         {/* Life Saving Advice */}
         <div className="md:col-span-2 bg-red-500/10 p-6 rounded-2xl border border-red-500/20 flex flex-col justify-center relative">
           <h4 className="text-xs font-bold text-red-400 uppercase mb-4 absolute top-4 left-4 tracking-widest">
-            3. CONSIGLIO SALVAVITA
+            {t('validation_life_saving_advice_title')}
           </h4>
           <div className="flex items-start gap-5 mt-4">
             <div className="w-16 h-16 bg-red-500/20 rounded-2xl flex items-center justify-center text-red-400 shrink-0 shadow-lg shadow-red-500/20">
@@ -123,7 +142,7 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
               <p className="text-xl font-black text-white leading-tight mb-2 italic">
                 "{result.lifeSavingAdvice}"
               </p>
-              <p className="text-xs text-red-300/60 font-medium uppercase tracking-wider">Azione prioritaria richiesta ora</p>
+              <p className="text-xs text-red-300/60 font-medium uppercase tracking-wider">{t('validation_priority_action')}</p>
             </div>
           </div>
         </div>
@@ -132,25 +151,25 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
       {/* Technical Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white/5 p-3 rounded-xl border border-white/10">
-          <span className="text-[10px] uppercase text-white/40 font-bold">Volume Netto</span>
+          <span className="text-[10px] uppercase text-white/40 font-bold">{t('validation_net_volume')}</span>
           <p className="text-xl font-bold text-white">
             {result.technicalData.netVolume > 0 ? `${result.technicalData.netVolume.toFixed(1)}L` : '--- L'}
           </p>
         </div>
         <div className="bg-white/5 p-3 rounded-xl border border-white/10">
-          <span className="text-[10px] uppercase text-white/40 font-bold">Lumen/Litro</span>
+          <span className="text-[10px] uppercase text-white/40 font-bold">{t('validation_lumen_per_liter')}</span>
           <p className="text-xl font-bold text-white">
-            {result.technicalData.lumenPerLiter > 0 ? `${result.technicalData.lumenPerLiter.toFixed(1)} lm/L` : 'Seleziona Lampada'}
+            {result.technicalData.lumenPerLiter > 0 ? `${result.technicalData.lumenPerLiter.toFixed(1)} lm/L` : t('validation_select_lamp')}
           </p>
         </div>
         <div className="bg-white/5 p-3 rounded-xl border border-white/10">
-          <span className="text-[10px] uppercase text-white/40 font-bold">CO2 Disciolta</span>
+          <span className="text-[10px] uppercase text-white/40 font-bold">{t('validation_co2_dissolved')}</span>
           <p className="text-xl font-bold text-white">
             {result.technicalData.co2 > 0 ? `${result.technicalData.co2.toFixed(1)} mg/L` : '--- mg/L'}
           </p>
         </div>
         <div className="bg-white/5 p-3 rounded-xl border border-white/10">
-          <span className="text-[10px] uppercase text-white/40 font-bold">Peso Totale</span>
+          <span className="text-[10px] uppercase text-white/40 font-bold">{t('validation_total_weight')}</span>
           <p className="text-xl font-bold text-white">
             {result.technicalData.totalWeight > 0 ? `~${result.technicalData.totalWeight.toFixed(0)} kg` : '~ 0 kg'}
           </p>
@@ -161,7 +180,7 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-zinc-800/50 p-4 rounded-2xl border border-white/5 h-[300px]">
           <h4 className="text-xs font-bold text-white/40 uppercase mb-4 flex items-center gap-2 tracking-widest">
-            <Activity size={14} /> BILANCIO BIOLOGICO
+            <Activity size={14} /> {t('validation_biological_balance')}
           </h4>
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
@@ -180,7 +199,7 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
 
         <div className="bg-zinc-800/50 p-4 rounded-2xl border border-white/5 flex flex-col">
           <h4 className="text-xs font-bold text-white/40 uppercase mb-4 flex items-center gap-2 tracking-widest">
-            <Info size={14} /> DETTAGLIO INCOMPATIBILITÀ
+            <Info size={14} /> {t('validation_incompatibility_detail')}
           </h4>
           <div className="space-y-3 flex-grow overflow-y-auto custom-scrollbar pr-2">
             {result.explanation.length > 0 ? (
@@ -200,7 +219,7 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
               ))
             ) : (
               <div className="text-sm text-emerald-400/80 p-3 bg-emerald-500/5 rounded-xl border border-emerald-500/10">
-                ✅ Nessun rischio biologico immediato rilevato.
+                {t('validation_no_risks')}
               </div>
             )}
           </div>
@@ -213,7 +232,7 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
       {result.suggestedChart && (
         <div className="bg-indigo-500/10 p-4 rounded-2xl border border-indigo-500/20">
           <h4 className="text-xs font-bold text-indigo-400 uppercase mb-3 flex items-center gap-2">
-            <Zap size={14} /> Grafico Consigliato per il Report
+            <Zap size={14} /> {t('validation_suggested_chart_title')}
           </h4>
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400">
@@ -222,9 +241,9 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
             <div>
               <p className="text-white font-bold">{result.suggestedChart}</p>
               <p className="text-xs text-white/60">
-                {result.suggestedChart === 'Intersezione Range' && 'Visualizza la sovrapposizione dei parametri chimici ideali per le tue specie.'}
-                {result.suggestedChart === 'Triangolo Alghe' && 'Analizza il rapporto tra Luce, CO2 e Nutrienti per prevenire infestazioni.'}
-                {result.suggestedChart === 'Ciclo Azoto' && 'Monitora la maturazione biologica del filtro e la conversione dei nitriti.'}
+                {result.suggestedChart === 'Intersezione Range' && t('validation_chart_desc_intersection')}
+                {result.suggestedChart === 'Triangolo Alghe' && t('validation_chart_desc_algae')}
+                {result.suggestedChart === 'Ciclo Azoto' && t('validation_chart_desc_nitrogen')}
               </p>
             </div>
           </div>
@@ -234,7 +253,7 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
       {/* Swimming Zones Map */}
       <div className="bg-zinc-800/50 p-4 rounded-2xl border border-white/5">
         <h4 className="text-xs font-bold text-white/40 uppercase mb-4 flex items-center gap-2 tracking-widest">
-          <LayoutGrid size={14} /> ANALISI ZONE DI NUOTO
+          <LayoutGrid size={14} /> {t('validation_swimming_zones_title')}
         </h4>
         <div className="relative h-48 w-full bg-indigo-950/30 rounded-xl border border-white/5 overflow-hidden flex flex-col">
           {/* Superficie */}
@@ -242,14 +261,14 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
             result.zoneAnalysis.superficie.status === 'Rosso' ? 'bg-red-500/10' : 
             result.zoneAnalysis.superficie.status === 'Giallo' ? 'bg-amber-500/10' : 'bg-emerald-500/5'
           }`}>
-            <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest">Superficie</span>
+            <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest">{t('validation_zone_surface')}</span>
             <div className="flex items-center gap-4">
-              <span className="text-xs font-bold text-white/60">{result.zoneAnalysis.superficie.count} Pesci</span>
+              <span className="text-xs font-bold text-white/60">{result.zoneAnalysis.superficie.count} {t('validation_fish_count')}</span>
               <span className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest ${
                 result.zoneAnalysis.superficie.status === 'Rosso' ? 'bg-red-500/20 text-red-400' : 
                 result.zoneAnalysis.superficie.status === 'Giallo' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
               }`}>
-                {result.zoneAnalysis.superficie.status}
+                {translateStatus(result.zoneAnalysis.superficie.status)}
               </span>
             </div>
           </div>
@@ -259,14 +278,14 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
             result.zoneAnalysis.centro.status === 'Rosso' ? 'bg-red-500/10' : 
             result.zoneAnalysis.centro.status === 'Giallo' ? 'bg-amber-500/10' : 'bg-emerald-500/5'
           }`}>
-            <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest">Centro</span>
+            <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest">{t('validation_zone_mid')}</span>
             <div className="flex items-center gap-4">
-              <span className="text-xs font-bold text-white/60">{result.zoneAnalysis.centro.count} Pesci</span>
+              <span className="text-xs font-bold text-white/60">{result.zoneAnalysis.centro.count} {t('validation_fish_count')}</span>
               <span className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest ${
                 result.zoneAnalysis.centro.status === 'Rosso' ? 'bg-red-500/20 text-red-400' : 
                 result.zoneAnalysis.centro.status === 'Giallo' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
               }`}>
-                {result.zoneAnalysis.centro.status}
+                {translateStatus(result.zoneAnalysis.centro.status)}
               </span>
             </div>
           </div>
@@ -276,14 +295,14 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
             result.zoneAnalysis.fondo.status === 'Rosso' ? 'bg-red-500/10' : 
             result.zoneAnalysis.fondo.status === 'Giallo' ? 'bg-amber-500/10' : 'bg-emerald-500/5'
           }`}>
-            <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest">Fondo</span>
+            <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest">{t('validation_zone_bottom')}</span>
             <div className="flex items-center gap-4">
-              <span className="text-xs font-bold text-white/60">{result.zoneAnalysis.fondo.count} Pesci</span>
+              <span className="text-xs font-bold text-white/60">{result.zoneAnalysis.fondo.count} {t('validation_fish_count')}</span>
               <span className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest ${
                 result.zoneAnalysis.fondo.status === 'Rosso' ? 'bg-red-500/20 text-red-400' : 
                 result.zoneAnalysis.fondo.status === 'Giallo' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
               }`}>
-                {result.zoneAnalysis.fondo.status}
+                {translateStatus(result.zoneAnalysis.fondo.status)}
               </span>
             </div>
           </div>
@@ -294,7 +313,7 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
       {result.purchaseSuggestions.length > 0 && (
         <div className="bg-indigo-900/20 p-5 rounded-2xl border border-indigo-500/30">
           <h4 className="text-xs font-bold text-indigo-300 uppercase mb-4 flex items-center gap-2 tracking-widest">
-            <Zap size={14} /> 4. COMPLETA IL TUO ECOSISTEMA
+            <Zap size={14} /> {t('validation_complete_ecosystem_title')}
           </h4>
           <div className="space-y-4">
             {result.purchaseSuggestions.map((sug, i) => (
@@ -326,7 +345,7 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
       {/* Trend Chart Section */}
       <div className="bg-zinc-800/50 p-4 rounded-2xl border border-white/5">
         <h4 className="text-xs font-bold text-white/40 uppercase mb-4 flex items-center gap-2">
-          <Activity size={14} /> Andamento Parametri
+          <Activity size={14} /> {t('validation_trend_chart_title')}
         </h4>
         <div className="h-64 w-full">
           <HistoryChart data={testLogs} />

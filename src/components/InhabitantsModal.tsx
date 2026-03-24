@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Plus, Trash2, Fish, Leaf, Search, DollarSign, Grid, Info, Box } from 'lucide-react';
+import { X, Plus, Trash2, Fish, Leaf, Search, DollarSign, Grid, Info, Box, Thermometer, Droplets, Waves, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { HARDSCAPE_SUGGESTIONS } from '../constants/filters';
+import { FISH_MASTER_DATA, PLANT_MASTER_DATA } from '../constants/masterData';
 
 const SUGGESTIONS = {
   fish: [
@@ -47,21 +48,56 @@ const SUGGESTIONS = {
   ]
 };
 
-export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
+export default function InhabitantsModal({ inhabitants, onUpdate, onClose, latestLog }) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'fish' | 'plants' | 'hardscape'>('fish');
   const [showGallery, setShowGallery] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [itemQuantities, setItemQuantities] = useState<Record<string, number>>({});
   const [itemSexes, setItemSexes] = useState<Record<string, 'M' | 'F' | 'N/A'>>({});
+  const [selectedInfoItem, setSelectedInfoItem] = useState<any>(null);
 
   const filteredSuggestions = useMemo(() => {
-    const suggestions = SUGGESTIONS[activeTab];
-    if (!searchQuery) return suggestions;
-    return suggestions.filter(s => 
-      s.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery, activeTab]);
+    let suggestions = SUGGESTIONS[activeTab].map(s => {
+      let isRecommended = false;
+      let masterData: any = null;
+
+      if (activeTab === 'fish') {
+        masterData = FISH_MASTER_DATA.find(f => f.name.toLowerCase() === s.name.toLowerCase());
+        if (masterData && latestLog && Object.keys(latestLog).length > 0) {
+          const temp = latestLog.temp ?? 25;
+          const ph = latestLog.ph ?? 7;
+          const gh = latestLog.gh ?? 10;
+          
+          isRecommended = 
+            temp >= masterData.temp[0] && temp <= masterData.temp[1] &&
+            ph >= masterData.ph[0] && ph <= masterData.ph[1] &&
+            gh >= masterData.gh[0] && gh <= masterData.gh[1];
+        }
+      } else if (activeTab === 'plants') {
+        masterData = PLANT_MASTER_DATA.find(p => p.name.toLowerCase() === s.name.toLowerCase());
+        if (masterData && latestLog && Object.keys(latestLog).length > 0) {
+          const temp = latestLog.temp ?? 25;
+          const ph = latestLog.ph ?? 7;
+          
+          isRecommended = 
+            temp >= masterData.temp[0] && temp <= masterData.temp[1] &&
+            ph >= masterData.ph[0] && ph <= masterData.ph[1];
+        }
+      }
+
+      return { ...s, isRecommended, masterData };
+    });
+
+    if (searchQuery) {
+      suggestions = suggestions.filter(s => 
+        s.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Sort recommended first
+    return suggestions.sort((a, b) => (b.isRecommended ? 1 : 0) - (a.isRecommended ? 1 : 0));
+  }, [searchQuery, activeTab, latestLog]);
 
   const handleAddItem = (suggestion: { name: string, price: number }) => {
     const quantity = itemQuantities[suggestion.name] || 1;
@@ -121,7 +157,7 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
               <Fish className="text-emerald-400" />
-              Allestimento Acquario
+              {t('inhabitants_modal_title')}
             </h2>
             <button 
               onClick={onClose}
@@ -161,7 +197,7 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
                 }`}
               >
                 <Box size={18} />
-                Base e Hardscape
+                {t('inhabitants_hardscape')}
               </button>
             </div>
           </div>
@@ -173,9 +209,9 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
             >
               <div className="flex items-center gap-2">
                 <Plus size={24} />
-                <span className="text-lg">{t('add_new_inhabitant') || 'Aggiungi Nuovo'}</span>
+                <span className="text-lg">{t('inhabitants_add_new')}</span>
               </div>
-              <span className="text-[10px] opacity-60 uppercase tracking-widest font-medium">Sfoglia il catalogo completo</span>
+              <span className="text-[10px] opacity-60 uppercase tracking-widest font-medium">{t('inhabitants_browse_catalog')}</span>
             </button>
           </div>
 
@@ -258,11 +294,11 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
                   <div>
                     <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                       <Grid className="text-emerald-400" />
-                      {activeTab === 'fish' ? t('fish_catalog') || 'Catalogo Pesci' : 
-                       activeTab === 'plants' ? t('plants_catalog') || 'Catalogo Piante' : 
-                       t('hardscape_catalog') || 'Catalogo Hardscape'}
+                      {activeTab === 'fish' ? t('fish_catalog') : 
+                       activeTab === 'plants' ? t('plants_catalog') : 
+                       t('hardscape_catalog')}
                     </h3>
-                    <p className="text-white/40 text-[10px] sm:text-xs mt-1">{t('catalog_subtitle') || 'Seleziona quantità e aggiungi al tuo acquario'}</p>
+                    <p className="text-white/40 text-[10px] sm:text-xs mt-1">{t('catalog_subtitle')}</p>
                   </div>
                   <button 
                     onClick={() => setShowGallery(false)}
@@ -277,7 +313,7 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={t('search_catalog_placeholder') || 'Cerca nel catalogo...'}
+                    placeholder={t('search_catalog_placeholder')}
                     className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm sm:text-base"
                   />
                   <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
@@ -298,8 +334,31 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
                         />
+                        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none" />
                         <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10">
                           <span className="text-emerald-400 font-bold text-xs">€{s.price.toFixed(2)}</span>
+                        </div>
+                        
+                        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none">
+                          <div className="flex-1">
+                            {s.isRecommended && (
+                              <div className="bg-emerald-500 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter shadow-lg shadow-emerald-500/40 border border-emerald-400/50 inline-block">
+                                {t('recommended_badge')}
+                              </div>
+                            )}
+                          </div>
+
+                          {s.masterData && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedInfoItem(s);
+                              }}
+                              className="p-2 bg-black/50 hover:bg-black/70 backdrop-blur-md rounded-full border border-white/20 text-white transition-all active:scale-90 pointer-events-auto shadow-lg"
+                            >
+                              <Info size={18} />
+                            </button>
+                          )}
                         </div>
                       </div>
                       <div className="p-4 flex flex-col gap-4">
@@ -307,7 +366,7 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
                         
                         {activeTab === 'fish' && (
                           <div className="flex flex-col gap-2">
-                            <p className="text-[10px] uppercase font-bold text-white/40">Sesso:</p>
+                            <p className="text-[10px] uppercase font-bold text-white/40">{t('sex_label')}</p>
                             <div className="flex gap-2">
                               {['M', 'F', 'N/A'].map((sex) => (
                                 <button
@@ -319,7 +378,7 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
                                       : 'bg-white/5 text-white/40 hover:text-white/60'
                                   }`}
                                 >
-                                  {sex === 'N/A' ? 'Indefinito' : sex === 'M' ? 'Maschio' : 'Femmina'}
+                                  {sex === 'N/A' ? t('sex_undefined') : sex === 'M' ? t('sex_male') : t('sex_female')}
                                 </button>
                               ))}
                             </div>
@@ -350,13 +409,107 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose }) {
                             className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 font-bold text-sm active:scale-95"
                           >
                             <Plus size={16} />
-                            {t('add_button') || 'Aggiungi'}
+                            {t('add_button')}
                           </button>
                         </div>
                       </div>
                     </motion.div>
                   ))}
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Info Modal */}
+      <AnimatePresence>
+        {selectedInfoItem && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedInfoItem(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-zinc-900 border border-white/10 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden"
+            >
+              <div className="relative h-48 sm:h-64">
+                <img 
+                  src={selectedInfoItem.image} 
+                  alt={selectedInfoItem.name}
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/20 to-transparent" />
+                <button 
+                  onClick={() => setSelectedInfoItem(null)}
+                  className="absolute top-4 right-4 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
+                <div className="absolute bottom-4 left-6">
+                  <h3 className="text-2xl font-black text-white">{selectedInfoItem.name}</h3>
+                  {selectedInfoItem.isRecommended && (
+                    <span className="text-emerald-400 text-xs font-bold uppercase tracking-widest">{t('info_recommended_species')}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
+                    <div className="flex items-center gap-2 text-white/40 mb-1">
+                      <Thermometer size={14} />
+                      <span className="text-[10px] font-bold uppercase tracking-wider">{t('info_temperature')}</span>
+                    </div>
+                    <span className="text-white font-bold">{selectedInfoItem.masterData.temp[0]}°C - {selectedInfoItem.masterData.temp[1]}°C</span>
+                  </div>
+                  <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
+                    <div className="flex items-center gap-2 text-white/40 mb-1">
+                      <Droplets size={14} />
+                      <span className="text-[10px] font-bold uppercase tracking-wider">{t('info_ph')}</span>
+                    </div>
+                    <span className="text-white font-bold">{selectedInfoItem.masterData.ph[0]} - {selectedInfoItem.masterData.ph[1]}</span>
+                  </div>
+                  {activeTab === 'fish' && (
+                    <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
+                      <div className="flex items-center gap-2 text-white/40 mb-1">
+                        <Waves size={14} />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">{t('info_gh')}</span>
+                      </div>
+                      <span className="text-white font-bold">{selectedInfoItem.masterData.gh[0]} - {selectedInfoItem.masterData.gh[1]}</span>
+                    </div>
+                  )}
+                  <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
+                    <div className="flex items-center gap-2 text-white/40 mb-1">
+                      <MapPin size={14} />
+                      <span className="text-[10px] font-bold uppercase tracking-wider">{t('info_positioning')}</span>
+                    </div>
+                    <span className="text-white font-bold">{activeTab === 'fish' ? selectedInfoItem.masterData.zone : selectedInfoItem.masterData.position}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest">{t('info_details_title')}</h4>
+                  <p className="text-white/70 text-sm leading-relaxed">
+                    {activeTab === 'fish' ? selectedInfoItem.masterData.note : selectedInfoItem.masterData.details}
+                  </p>
+                </div>
+
+                {activeTab === 'fish' && selectedInfoItem.masterData.breeding && (
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl">
+                    <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-2">{t('info_breeding_title')}</h4>
+                    <p className="text-emerald-100/70 text-xs leading-relaxed">
+                      {selectedInfoItem.masterData.breeding.description}
+                    </p>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>

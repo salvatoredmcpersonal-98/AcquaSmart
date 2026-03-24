@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Send, Bot, User, Sparkles, Loader2, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { askAquariumExpert } from '../services/aiService';
+import { useLocale } from '../context/LocaleContext';
 
 interface Message {
   id: string;
@@ -16,10 +18,12 @@ interface AIConsultantProps {
 }
 
 export default function AIConsultant({ onClose, context }: AIConsultantProps) {
+  const { t } = useTranslation();
+  const { locale } = useLocale();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Ciao! Sono Smart Guardian AI, il tuo consulente esperto di acquariologia. Come posso aiutarti oggi?",
+      text: t('ai_consultant_welcome'),
       sender: 'ai',
       timestamp: new Date()
     }
@@ -52,11 +56,11 @@ export default function AIConsultant({ onClose, context }: AIConsultantProps) {
     setIsLoading(true);
 
     try {
-      const response = await askAquariumExpert(input, context);
+      const response = await askAquariumExpert(input, context, locale.id);
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: response || "Mi dispiace, non riesco a rispondere in questo momento.",
+        text: response || t('ai_consultant_error'),
         sender: 'ai',
         timestamp: new Date()
       };
@@ -65,7 +69,7 @@ export default function AIConsultant({ onClose, context }: AIConsultantProps) {
     } catch (error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: "Si è verificato un errore durante la connessione con l'esperto AI. Riprova più tardi.",
+        text: t('ai_consultant_error'),
         sender: 'ai',
         timestamp: new Date()
       };
@@ -76,7 +80,7 @@ export default function AIConsultant({ onClose, context }: AIConsultantProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -99,10 +103,10 @@ export default function AIConsultant({ onClose, context }: AIConsultantProps) {
             </div>
             <div>
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                Smart Guardian AI
+                {t('ai_consultant_title')}
                 <Sparkles size={16} className="text-amber-400 animate-pulse" />
               </h2>
-              <p className="text-xs text-white/40 font-medium uppercase tracking-wider">Consulente Esperto</p>
+              <p className="text-xs text-white/40 font-medium uppercase tracking-wider">{t('ai_consultant_tagline')}</p>
             </div>
           </div>
           <button 
@@ -149,7 +153,7 @@ export default function AIConsultant({ onClose, context }: AIConsultantProps) {
                 </div>
                 <div className="bg-white/5 border border-white/10 p-4 rounded-2xl rounded-tl-none flex items-center gap-2">
                   <Loader2 size={16} className="animate-spin text-emerald-400" />
-                  <span className="text-xs text-white/60 italic">L'esperto sta scrivendo...</span>
+                  <span className="text-xs text-white/60 italic">{t('ai_consultant_loading')}</span>
                 </div>
               </div>
             </div>
@@ -164,7 +168,7 @@ export default function AIConsultant({ onClose, context }: AIConsultantProps) {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Chiedi all'esperto (es: acqua verde, pesci malati...)"
+              placeholder={t('ai_consultant_placeholder')}
               className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm placeholder:text-white/20 pr-14"
               disabled={isLoading}
             />

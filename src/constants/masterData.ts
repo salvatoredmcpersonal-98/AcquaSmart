@@ -21,16 +21,19 @@ export interface PlantSpecies {
   light: [number, number]; // lm/L
   co2: boolean;
   ph: [number, number];
+  temp: [number, number];
   substrate: string;
+  position: 'Primo Piano' | 'Centro' | 'Sfondo' | 'Galleggiante' | 'Epifita';
+  details: string;
 }
 
 export const FISH_MASTER_DATA: FishSpecies[] = [
   { 
-    name: 'Neon', temp: [22, 26], ph: [5.0, 7.0], gh: [2, 10], behavior: 'Pacifico', zone: 'Centro', minVolume: 60, maxSize: 4, group: 'Nano', note: 'Sensibile a sbalzi',
+    name: 'Neon (P. innesi)', temp: [22, 26], ph: [5.0, 7.0], gh: [2, 10], behavior: 'Pacifico', zone: 'Centro', minVolume: 60, maxSize: 4, group: 'Nano', note: 'Sensibile a sbalzi',
     breeding: { type: 'Uova', days: 1, description: 'Depone uova libere tra le piante. Schiusa in 24h.' }
   },
   { 
-    name: 'Cardinali', temp: [24, 29], ph: [4.0, 6.5], gh: [1, 6], behavior: 'Pacifico', zone: 'Centro', minVolume: 60, maxSize: 5, group: 'Nano', note: 'Più esigente dei Neon',
+    name: 'Cardinali (P. axelrodi)', temp: [24, 29], ph: [4.0, 6.5], gh: [1, 6], behavior: 'Pacifico', zone: 'Centro', minVolume: 60, maxSize: 5, group: 'Nano', note: 'Più esigente dei Neon',
     breeding: { type: 'Uova', days: 1, description: 'Depone uova tra la vegetazione fitta. Schiusa in 24-30h.' }
   },
   { 
@@ -46,7 +49,7 @@ export const FISH_MASTER_DATA: FishSpecies[] = [
     breeding: { type: 'Uova', days: 2, description: 'Depone su pietre piatte. Schiusa in 48 ore.' }
   },
   { 
-    name: 'Corydoras', temp: [22, 26], ph: [6.0, 7.8], gh: [5, 18], behavior: 'Pacifico', zone: 'Fondo', minVolume: 60, maxSize: 6, group: 'Fondo', note: 'Necessita sabbia fine (non tagliente)',
+    name: 'Corydoras (Tutti)', temp: [22, 26], ph: [6.0, 7.8], gh: [5, 18], behavior: 'Pacifico', zone: 'Fondo', minVolume: 60, maxSize: 6, group: 'Fondo', note: 'Necessita sabbia fine (non tagliente)',
     breeding: { type: 'Uova', days: 4, description: 'Attacca le uova sui vetri o piante. Schiusa in 3-5 giorni.' }
   },
   { 
@@ -66,7 +69,7 @@ export const FISH_MASTER_DATA: FishSpecies[] = [
     breeding: { type: 'Parto', days: 30, description: 'Parto di avannotti vivi. Gestazione di 28-32 giorni.' }
   },
   { 
-    name: 'Molly', temp: [24, 28], ph: [7.5, 8.5], gh: [15, 30], behavior: 'Pacifico', zone: 'Alto/Centro', minVolume: 60, maxSize: 8, group: 'Poecilidi', note: 'Tollera acqua salmastra',
+    name: 'Molly (Black/Balloon)', temp: [24, 28], ph: [7.5, 8.5], gh: [15, 30], behavior: 'Pacifico', zone: 'Alto/Centro', minVolume: 60, maxSize: 8, group: 'Poecilidi', note: 'Tollera acqua salmastra',
     breeding: { type: 'Parto', days: 35, description: 'Parto di avannotti vivi. Gestazione di 30-40 giorni.' }
   },
   { 
@@ -74,7 +77,7 @@ export const FISH_MASTER_DATA: FishSpecies[] = [
     breeding: { type: 'Uova', days: 2, description: 'Nido di bolle in superficie. Schiusa in 24-48 ore.' }
   },
   { 
-    name: 'Trichogaster', temp: [24, 28], ph: [6.0, 7.8], gh: [5, 18], behavior: 'Tranquillo', zone: 'Alto/Centro', minVolume: 100, maxSize: 12, group: 'Labirintidi', note: 'Timidi, serve acqua calma',
+    name: 'Trichogaster (Gourami)', temp: [24, 28], ph: [6.0, 7.8], gh: [5, 18], behavior: 'Tranquillo', zone: 'Alto/Centro', minVolume: 100, maxSize: 12, group: 'Labirintidi', note: 'Timidi, serve acqua calma',
     breeding: { type: 'Uova', days: 1, description: 'Nido di bolle. Schiusa in 24 ore.' }
   },
   { 
@@ -82,11 +85,11 @@ export const FISH_MASTER_DATA: FishSpecies[] = [
     breeding: { type: 'Uova', days: 1, description: 'Depone sotto le foglie larghe. Schiusa in 24-30h.' }
   },
   { 
-    name: 'Danio Rerio', temp: [18, 24], ph: [6.5, 8.0], gh: [8, 20], behavior: 'Dinamici', zone: 'Alto/Centro', minVolume: 60, maxSize: 5, group: 'Dinamici', note: 'Nuoto molto veloce, stressa i timidi',
+    name: 'Danio Rerio (Zebra)', temp: [18, 24], ph: [6.5, 8.0], gh: [8, 20], behavior: 'Dinamici', zone: 'Alto/Centro', minVolume: 60, maxSize: 5, group: 'Dinamici', note: 'Nuoto molto veloce, stressa i timidi',
     breeding: { type: 'Uova', days: 2, description: 'Disperde uova sul fondo. Schiusa in 48 ore.' }
   },
   { 
-    name: 'Ciclidi Malawi', temp: [24, 27], ph: [7.8, 8.8], gh: [15, 25], behavior: 'Aggressivo', zone: 'Fondo', minVolume: 200, maxSize: 12, group: 'Aggressivo', note: 'Solo rocce, niente piante tenere',
+    name: 'Ciclidi Malawi (Mbuma)', temp: [24, 27], ph: [7.8, 8.8], gh: [15, 25], behavior: 'Aggressivo', zone: 'Fondo', minVolume: 200, maxSize: 12, group: 'Aggressivo', note: 'Solo rocce, niente piante tenere',
     breeding: { type: 'Uova', days: 21, description: 'Incubatore orale. Le uova schiudono in bocca dopo 21 giorni.' }
   },
   { 
@@ -104,10 +107,52 @@ export const FISH_MASTER_DATA: FishSpecies[] = [
 ];
 
 export const PLANT_MASTER_DATA: PlantSpecies[] = [
-  { name: 'Anubias', light: [15, 25], co2: false, ph: [6.0, 8.5], substrate: 'Inerte/Legni' },
-  { name: 'Cryptocoryne', light: [20, 30], co2: false, ph: [6.5, 7.5], substrate: 'Fertile' },
-  { name: 'Rotala Rossa', light: [45, 100], co2: true, ph: [5.5, 6.8], substrate: 'Fertile' },
-  { name: 'Montecarlo', light: [50, 100], co2: true, ph: [6.0, 7.0], substrate: 'Fertile' },
-  { name: 'Java Moss', light: [10, 40], co2: false, ph: [5.0, 8.0], substrate: 'Qualsiasi' },
-  { name: 'Vallisneria', light: [20, 40], co2: false, ph: [7.0, 8.5], substrate: 'Sabbia' },
+  { 
+    name: 'Anubias', light: [15, 25], co2: false, ph: [6.0, 8.5], temp: [22, 28], substrate: 'Inerte/Legni', 
+    position: 'Epifita', details: 'Pianta molto robusta a crescita lenta. Non va interrata nel substrato ma legata a legni o rocce.' 
+  },
+  { 
+    name: 'Java Fern', light: [10, 30], co2: false, ph: [6.0, 8.0], temp: [20, 28], substrate: 'Legni/Rocce', 
+    position: 'Epifita', details: 'Pianta epifita che cresce bene su legni e rocce. Molto resistente e adatta a acquari con poca luce.' 
+  },
+  { 
+    name: 'Amazon Sword', light: [30, 50], co2: false, ph: [6.5, 7.5], temp: [22, 28], substrate: 'Fertile', 
+    position: 'Sfondo', details: 'Pianta a crescita rapida che richiede un fondo fertile. Diventa molto grande, ideale per lo sfondo.' 
+  },
+  { 
+    name: 'Vallisneria', light: [20, 40], co2: false, ph: [7.0, 8.5], temp: [18, 28], substrate: 'Sabbia', 
+    position: 'Sfondo', details: 'Pianta a nastro che si riproduce velocemente tramite stoloni. Ottima per creare una "foresta" sullo sfondo.' 
+  },
+  { 
+    name: 'Cryptocoryne', light: [20, 30], co2: false, ph: [6.5, 7.5], temp: [22, 28], substrate: 'Fertile', 
+    position: 'Centro', details: 'Pianta da centro acquario, richiede un fondo ricco di nutrienti. Può soffrire di "marciume delle cryptocoryne" se spostata spesso.' 
+  },
+  { 
+    name: 'Java Moss', light: [10, 40], co2: false, ph: [5.0, 8.0], temp: [15, 30], substrate: 'Qualsiasi', 
+    position: 'Epifita', details: 'Muschio versatile che può essere legato a qualsiasi superficie. Ottimo rifugio per avannotti e caridine.' 
+  },
+  { 
+    name: 'Hornwort', light: [20, 50], co2: false, ph: [6.0, 8.5], temp: [10, 28], substrate: 'Nessuno', 
+    position: 'Galleggiante', details: 'Pianta galleggiante o da sfondo a crescita rapidissima. Ottima per assorbire nitrati in eccesso.' 
+  },
+  { 
+    name: 'Water Wisteria', light: [30, 60], co2: false, ph: [6.5, 7.5], temp: [22, 28], substrate: 'Fertile', 
+    position: 'Centro', details: 'Pianta versatile che può cambiare forma delle foglie in base alla luce. Cresce velocemente.' 
+  },
+  { 
+    name: 'Bacopa Caroliniana', light: [40, 70], co2: false, ph: [6.0, 7.5], temp: [15, 26], substrate: 'Fertile', 
+    position: 'Centro', details: 'Pianta a stelo con foglie carnose. Se esposta a forte luce può assumere sfumature bronzo.' 
+  },
+  { 
+    name: 'Ludwigia Repens', light: [40, 80], co2: true, ph: [5.5, 7.5], temp: [20, 28], substrate: 'Fertile', 
+    position: 'Centro', details: 'Pianta a stelo che diventa rossa con luce intensa e CO2. Molto decorativa.' 
+  },
+  { 
+    name: 'Monte Carlo', light: [50, 100], co2: true, ph: [6.0, 7.0], temp: [20, 26], substrate: 'Fertile', 
+    position: 'Primo Piano', details: 'Pianta da prato che richiede molta luce e CO2 per crescere compatta sul fondo.' 
+  },
+  { 
+    name: 'Dwarf Hairgrass', light: [50, 100], co2: true, ph: [6.0, 7.5], temp: [20, 28], substrate: 'Fertile', 
+    position: 'Primo Piano', details: 'Crea un effetto prato erboso. Richiede potature regolari e buona illuminazione.' 
+  },
 ];

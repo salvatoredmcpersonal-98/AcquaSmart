@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'motion/react';
-import { Bot, Sparkles } from 'lucide-react';
+import { Bot, Sparkles, Plus } from 'lucide-react';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Header from './components/Header';
@@ -13,11 +13,13 @@ import { useTrial } from './hooks/useTrial';
 import usePersistentState from './hooks/usePersistentState';
 
 export default function App() {
+  const { t } = useTranslation();
   const [isAuthenticated, setIsAuthenticated] = usePersistentState('isAuthenticated', false);
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [tanks, setTanks] = usePersistentState('userTanks_v2', []);
   const [currentTankIndex, setCurrentTankIndex] = usePersistentState('currentTankIndex', 0);
   const [isAddingNewTank, setIsAddingNewTank] = useState(false);
+  const [isEditingTank, setIsEditingTank] = useState(false);
   const [showAIConsultant, setShowAIConsultant] = useState(false);
   const [isBasicMode, setIsBasicMode] = usePersistentState('isBasicMode', false);
   const [testLogs, setTestLogs] = usePersistentState('userTestLogs_v3', []);
@@ -53,8 +55,24 @@ export default function App() {
   };
 
   const handleTankAdded = (newTank) => {
-    const updatedTanks = [...tanks, { ...newTank, id: Date.now() }];
+    const tankId = Date.now();
+    const tankWithId = { ...newTank, id: tankId };
+    const updatedTanks = [...tanks, tankWithId];
     setTanks(updatedTanks);
+    
+    // Create initial log entry with the base temperature so it appears in history/charts
+    if (newTank.baseTemp !== undefined) {
+      const initialLog = {
+        tankId: tankId,
+        timestamp: new Date().toISOString(),
+        temp: newTank.baseTemp,
+        ph: null,
+        nitrates: null,
+        kh: null
+      };
+      setTestLogs(prev => [initialLog, ...prev]);
+    }
+
     setCurrentTankIndex(updatedTanks.length - 1);
     setIsAddingNewTank(false);
   };
@@ -138,7 +156,21 @@ export default function App() {
   };
 
   const handleUpdateTank = (updatedTank) => {
+    const oldTank = tanks.find(t => t.id === updatedTank.id);
     setTanks(prevTanks => prevTanks.map(t => t.id === updatedTank.id ? updatedTank : t));
+    
+    // If base temperature changed, record it in history
+    if (oldTank && updatedTank.baseTemp !== undefined && updatedTank.baseTemp !== oldTank.baseTemp) {
+      const newLog = {
+        tankId: updatedTank.id,
+        timestamp: new Date().toISOString(),
+        temp: updatedTank.baseTemp,
+        ph: null,
+        nitrates: null,
+        kh: null
+      };
+      setTestLogs(prev => [newLog, ...prev]);
+    }
   };
 
   const handleDeleteTank = (tankId) => {
@@ -239,6 +271,7 @@ export default function App() {
             tanks={tanks}
             onUpdateTank={handleUpdateTank}
             onDeleteTank={handleDeleteTank}
+            setIsEditingTank={setIsEditingTank}
           />
         ) : (
           <Dashboard 
@@ -261,6 +294,7 @@ export default function App() {
             onCloseRemindersInitial={() => setShowRemindersFromHeader(false)}
             isBasicMode={isBasicMode}
             onShowPaywall={() => setIsBasicMode(false)}
+            setIsEditingTank={setIsEditingTank}
           />
         )}
         <AnimatePresence>
@@ -310,26 +344,31 @@ export default function App() {
       </main>
 
       {/* Dynamic AI Consultant Button */}
-      <motion.button
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={() => setShowAIConsultant(true)}
-        className="fixed bottom-6 right-6 z-[60] flex items-center gap-3 bg-emerald-500 text-white px-5 py-4 rounded-3xl shadow-2xl shadow-emerald-500/40 border border-white/20 group overflow-hidden"
-      >
-        <motion.div
-          animate={{ rotate: [0, -10, 10, -10, 0] }}
-          transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-        >
-          <Bot size={24} />
-        </motion.div>
-        <span className="font-bold text-sm uppercase tracking-widest hidden sm:inline">AI Expert</span>
-        <Sparkles size={16} className="text-amber-300 absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-        
-        {/* Glow effect */}
-        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-      </motion.button>
+      <AnimatePresence>
+        {currentPage === 'dashboard' && tanks.length > 0 && !isAddingNewTank && !isEditingTank && (
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowAIConsultant(true)}
+            className="fixed bottom-6 right-6 z-[200] flex items-center gap-3 bg-emerald-500 text-white px-5 py-4 rounded-3xl shadow-2xl shadow-emerald-500/40 border border-white/20 group overflow-hidden"
+          >
+            <motion.div
+              animate={{ rotate: [0, -10, 10, -10, 0] }}
+              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            >
+              <Bot size={24} />
+            </motion.div>
+            <span className="font-bold text-sm uppercase tracking-widest hidden sm:inline">{t('ai_expert_button')}</span>
+            <Sparkles size={16} className="text-amber-300 absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+            
+            {/* Glow effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

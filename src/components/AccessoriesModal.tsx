@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Plus, Trash2, Lamp, Filter, Box, Ruler, DollarSign, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FILTER_SUGGESTIONS, TANK_SUGGESTIONS, LAMP_SUGGESTIONS, Suggestion } from '../constants/filters';
 
 export default function AccessoriesModal({ accessories, onUpdate, onClose, tankVolume = 0 }) {
+  const { t } = useTranslation();
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState('');
   const [customName, setCustomName] = useState('');
@@ -109,7 +111,7 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
               <div className="bg-indigo-500/20 p-2 rounded-xl">
                 <Lamp className="text-indigo-400" size={20} />
               </div>
-              Accessori
+              {t('accessories_title')}
             </h2>
             <button 
               onClick={onClose}
@@ -133,7 +135,7 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
                 <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2 ml-1">
-                      Tipo
+                      {t('accessories_type_label')}
                     </label>
                     <select 
                       value={newType}
@@ -146,16 +148,16 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
                       }}
                       className="w-full bg-zinc-800 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm"
                     >
-                      <option value="lamp">Lampada</option>
-                      <option value="filter">Filtro</option>
-                      <option value="tank">Acquario</option>
-                      <option value="other">Altro</option>
+                      <option value="lamp">{t('accessories_type_lamp')}</option>
+                      <option value="filter">{t('accessories_type_filter')}</option>
+                      <option value="tank">{t('accessories_type_tank')}</option>
+                      <option value="other">{t('accessories_type_other')}</option>
                     </select>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2 ml-1">
-                      Nome Accessorio
+                      {t('accessories_name_label')}
                     </label>
                     {newType === 'filter' || newType === 'tank' || newType === 'lamp' ? (
                       <div className="relative">
@@ -176,9 +178,9 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
                           className="w-full bg-zinc-800 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm appearance-none cursor-pointer"
                         >
                           <option value="">
-                            {newType === 'filter' ? 'Seleziona un filtro consigliato...' : 
-                             newType === 'tank' ? 'Seleziona un acquario consigliato...' : 
-                             'Seleziona una lampada consigliata...'}
+                            {newType === 'filter' ? t('accessories_select_filter') : 
+                             newType === 'tank' ? t('accessories_select_tank') : 
+                             t('accessories_select_lamp')}
                           </option>
                           {(newType === 'filter' ? suggestedFilters : 
                             newType === 'tank' ? suggestedTanks : 
@@ -187,7 +189,7 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
                               {s.model} {s.category ? `(${s.category})` : s.type ? `(${s.type})` : ''} - {s.priceRange}
                             </option>
                           ))}
-                          <option value="custom">-- Altro (Inserimento manuale) --</option>
+                          <option value="custom">{t('accessories_custom_option')}</option>
                         </select>
                         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" size={16} />
                         
@@ -197,9 +199,9 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
                             value={customName}
                             onChange={(e) => setCustomName(e.target.value)}
                             placeholder={
-                              newType === 'filter' ? "Inserisci nome filtro..." : 
-                              newType === 'tank' ? "Inserisci nome acquario..." : 
-                              "Inserisci nome lampada..."
+                              newType === 'filter' ? t('accessories_placeholder_filter') : 
+                              newType === 'tank' ? t('accessories_placeholder_tank') : 
+                              t('accessories_placeholder_lamp')
                             }
                             className="w-full mt-2 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm"
                             autoFocus
@@ -211,7 +213,7 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
                         type="text"
                         value={newName}
                         onChange={(e) => setNewName(e.target.value)}
-                        placeholder="es. Lampada LED 20W"
+                        placeholder={t('accessories_placeholder_generic')}
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm"
                         autoFocus
                       />
@@ -221,7 +223,7 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
                   {(newType === 'tank' || newType === 'lamp') && (
                     <div>
                       <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2 ml-1">
-                        Dimensioni {newType === 'lamp' ? '(es. 30 x 5 x 1 cm)' : '(es. 60x30x35)'}
+                        {t('accessories_dimensions_label')} {newType === 'lamp' ? '(es. 30 x 5 x 1 cm)' : '(es. 60x30x35)'}
                       </label>
                       <div className="relative">
                         <Ruler className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={16} />
@@ -229,7 +231,7 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
                           type="text"
                           value={newDimensions}
                           onChange={(e) => setNewDimensions(e.target.value)}
-                          placeholder={newType === 'lamp' ? "Dimensioni lampada" : "Lunghezza x Larghezza x Altezza"}
+                          placeholder={newType === 'lamp' ? t('accessories_dimensions_placeholder_lamp') : t('accessories_dimensions_placeholder_tank')}
                           className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm"
                         />
                       </div>
@@ -238,7 +240,7 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
 
                   <div>
                     <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2 ml-1">
-                      Prezzo (€)
+                      {t('accessories_price_label')}
                     </label>
                     <div className="relative">
                       <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={16} />
@@ -259,13 +261,13 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
                     onClick={() => setShowAddForm(false)}
                     className="flex-1 py-3 rounded-xl font-bold text-white/60 hover:bg-white/5 transition-colors"
                   >
-                    Annulla
+                    {t('accessories_cancel_button')}
                   </button>
                   <button 
                     type="submit"
                     className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
                   >
-                    Salva
+                    {t('accessories_save_button')}
                   </button>
                 </div>
               </motion.form>
@@ -277,7 +279,7 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
                 className="w-full bg-white/5 border border-dashed border-white/20 hover:border-indigo-500/50 hover:bg-indigo-500/5 py-4 rounded-2xl transition-all flex items-center justify-center gap-2 text-white/40 hover:text-indigo-400 mb-6 group"
               >
                 <Plus size={20} className="group-hover:scale-110 transition-transform" />
-                <span className="font-bold">Aggiungi Accessorio</span>
+                <span className="font-bold">{t('accessories_add_button')}</span>
               </motion.button>
             )}
           </AnimatePresence>
@@ -286,7 +288,7 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
             {accessories.length === 0 ? (
               <div className="text-center py-12">
                 <Lamp size={48} className="mx-auto text-white/10 mb-4" />
-                <p className="text-white/40 italic">Nessun accessorio aggiunto</p>
+                <p className="text-white/40 italic">{t('accessories_empty_message')}</p>
               </div>
             ) : (
               accessories.map((accessory) => (
