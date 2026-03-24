@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTrial } from '../hooks/useTrial';
-import { Bell, Settings as SettingsIcon } from 'lucide-react';
+import { Bell, Settings as SettingsIcon, Bot } from 'lucide-react';
 
 interface HeaderProps {
   onSettingsClick: () => void;

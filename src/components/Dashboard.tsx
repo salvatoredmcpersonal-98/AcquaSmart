@@ -167,59 +167,54 @@ export default function Dashboard({
 
   const defaultLayouts = {
     lg: [
-      { i: 'health', x: 0, y: 0, w: 12, h: 4, minW: 4, minH: 3 },   
-      { i: 'inventory', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'nitrates', x: 4, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'temp', x: 8, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'ph', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'kh', x: 4, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'accessories', x: 8, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'inhabitants', x: 0, y: 8, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'reminders', x: 6, y: 8, w: 6, h: 2, minW: 3, minH: 2 },
+      { i: 'reminders', x: 0, y: 0, w: 12, h: 2, minW: 4, minH: 2 },
+      { i: 'temp', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'ph', x: 4, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'nitrates', x: 8, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'kh', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'inhabitants', x: 4, y: 4, w: 8, h: 2, minW: 4, minH: 2 },
+      { i: 'accessories', x: 0, y: 6, w: 6, h: 2, minW: 3, minH: 2 },
+      { i: 'inventory', x: 6, y: 6, w: 6, h: 2, minW: 3, minH: 2 },
     ],
     md: [
-      { i: 'health', x: 0, y: 0, w: 12, h: 4, minW: 4, minH: 2 },
-      { i: 'inventory', x: 0, y: 4, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'nitrates', x: 6, y: 4, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'temp', x: 0, y: 6, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'ph', x: 6, y: 6, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'kh', x: 0, y: 8, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'reminders', x: 6, y: 8, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'accessories', x: 0, y: 10, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'inhabitants', x: 6, y: 10, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'reminders', x: 0, y: 0, w: 12, h: 2, minW: 4, minH: 2 },
+      { i: 'temp', x: 0, y: 2, w: 6, h: 2, minW: 3, minH: 2 },
+      { i: 'ph', x: 6, y: 2, w: 6, h: 2, minW: 3, minH: 2 },
+      { i: 'nitrates', x: 0, y: 4, w: 6, h: 2, minW: 3, minH: 2 },
+      { i: 'kh', x: 6, y: 4, w: 6, h: 2, minW: 3, minH: 2 },
+      { i: 'inhabitants', x: 0, y: 6, w: 12, h: 2, minW: 4, minH: 2 },
+      { i: 'accessories', x: 0, y: 8, w: 6, h: 2, minW: 3, minH: 2 },
+      { i: 'inventory', x: 6, y: 8, w: 6, h: 2, minW: 3, minH: 2 },
     ],
     sm: [
-      { i: 'health', x: 0, y: 0, w: 6, h: 4, minW: 6, minH: 3 },
-      { i: 'inventory', x: 0, y: 4, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'reminders', x: 0, y: 0, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'temp', x: 0, y: 2, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'ph', x: 0, y: 4, w: 6, h: 2, minW: 4, minH: 2 },
       { i: 'nitrates', x: 0, y: 6, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'temp', x: 0, y: 8, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'ph', x: 0, y: 10, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'kh', x: 0, y: 12, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'reminders', x: 0, y: 14, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'accessories', x: 0, y: 16, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'inhabitants', x: 0, y: 18, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'kh', x: 0, y: 8, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'inhabitants', x: 0, y: 10, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'accessories', x: 0, y: 12, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'inventory', x: 0, y: 14, w: 6, h: 2, minW: 4, minH: 2 },
     ],
     xs: [
-      { i: 'health', x: 0, y: 0, w: 6, h: 4, minW: 6, minH: 3 },
-      { i: 'inventory', x: 0, y: 4, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'reminders', x: 0, y: 0, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'temp', x: 0, y: 2, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'ph', x: 0, y: 4, w: 6, h: 2, minW: 6, minH: 2 },
       { i: 'nitrates', x: 0, y: 6, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'temp', x: 0, y: 8, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'ph', x: 0, y: 10, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'kh', x: 0, y: 12, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'reminders', x: 0, y: 14, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'accessories', x: 0, y: 16, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'inhabitants', x: 0, y: 18, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'kh', x: 0, y: 8, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'inhabitants', x: 0, y: 10, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'accessories', x: 0, y: 12, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'inventory', x: 0, y: 14, w: 6, h: 2, minW: 6, minH: 2 },
     ],
     xxs: [
-      { i: 'health', x: 0, y: 0, w: 6, h: 4, minW: 6, minH: 3 },
-      { i: 'inventory', x: 0, y: 4, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'reminders', x: 0, y: 0, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'temp', x: 0, y: 2, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'ph', x: 0, y: 4, w: 6, h: 2, minW: 6, minH: 2 },
       { i: 'nitrates', x: 0, y: 6, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'temp', x: 0, y: 8, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'ph', x: 0, y: 10, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'kh', x: 0, y: 12, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'reminders',  x: 0, y: 14, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'accessories',  x: 0, y: 16, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'inhabitants', x: 0, y: 18, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'kh', x: 0, y: 8, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'inhabitants', x: 0, y: 10, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'accessories', x: 0, y: 12, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'inventory', x: 0, y: 14, w: 6, h: 2, minW: 6, minH: 2 },
     ]
   };
 
@@ -327,7 +322,7 @@ export default function Dashboard({
 
   return (
     <>
-      <div className="relative overflow-hidden bg-zinc-800 min-h-[calc(100vh-65px)] flex flex-col">
+      <div className="relative overflow-y-auto bg-zinc-950 min-h-[calc(100vh-65px)] flex flex-col custom-scrollbar">
         {/* Peek Labels */}
         <div className="absolute inset-0 pointer-events-none z-0">
           {/* Next Tank / Add Tank (Right Side) */}
@@ -368,7 +363,7 @@ export default function Dashboard({
           )}
         </div>
 
-        <div className="flex-1 relative grid grid-cols-1 grid-rows-1 overflow-hidden">
+        <div className="flex-1 relative grid grid-cols-1 grid-rows-1">
           <AnimatePresence initial={false} custom={direction}>
             <motion.div 
               key={currentTankIndex}
@@ -381,14 +376,14 @@ export default function Dashboard({
                 x: { type: "spring", stiffness: 400, damping: 40, mass: 0.8 },
                 opacity: { duration: 0.15 }
               }}
-              className="col-start-1 row-start-1 text-white touch-pan-y relative z-10 w-full"
+              className="col-start-1 row-start-1 text-white touch-pan-y relative z-10 w-full flex flex-col items-center"
               drag={isEditMode ? false : "x"}
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.2}
               style={{ x: dragX }}
               onDragEnd={handleDragEnd}
             >
-              <div className="p-6">
+              <div className="p-4 sm:p-6 w-full max-w-5xl mx-auto">
           <div className="flex flex-col items-center mb-12 px-4 sm:px-0">
             <div className="relative">
               <button 
@@ -526,52 +521,42 @@ export default function Dashboard({
             }}
             useCSSTransforms={true}
           >
-              <div key="health" 
+              <div key="reminders" 
                 className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
-                {...healthLongPress}
+                {...remindersLongPress}
               >
-                <motion.div 
-                  role="button"
-                  tabIndex={0}
-                  onTap={() => isBasicMode ? onShowPaywall() : setShowValidationModal(true)}
-                  className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center min-w-[150px] transition-all duration-200 cursor-pointer hover:bg-white/10 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}
-                >
+                <div className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}>
                   {isEditMode && (
                     <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
                       <GripVertical size={20} />
                     </div>
                   )}
-                  <p className="text-xs sm:text-sm md:text-base text-white/60 mb-2">{t('dashboard_health_score')}</p>
-                  <div className={`w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-full border-4 flex items-center justify-center my-2 transition-colors duration-500`} style={{ borderColor: isBasicMode ? '#3f3f46' : healthScore.color }}>
-                    {isBasicMode ? (
-                      <div className="flex flex-col items-center gap-1">
-                        <ShieldCheck size={32} className="text-white/20" />
-                        <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest">PRO</span>
+                  <StatCard 
+                    icon={<Bell size={20} className={overdueReminders > 0 ? "text-red-400 animate-pulse" : "text-emerald-300"} />} 
+                    label="Promemoria" 
+                    value={mostUrgentReminder ? (
+                      <span className="flex flex-col items-center">
+                        <span className="truncate leading-tight">{mostUrgentReminder.task}</span>
+                        <span className="text-[10px] sm:text-xs opacity-50 font-medium mt-0.5">
+                          Scade: {new Date(mostUrgentReminder.nextDue).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                        </span>
+                      </span>
+                    ) : 'Nessuno'} 
+                    colorClass={overdueReminders > 0 ? "bg-red-500/20" : "bg-emerald-500/20"} 
+                    onClick={() => setShowRemindersModal(true)}
+                    isEditMode={isEditMode}
+                    centered={true}
+                  />
+                  {overdueReminders > 0 && !isEditMode && (
+                    <div className="absolute top-2 right-2 flex gap-1">
+                      <div className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-bounce">
+                        !
                       </div>
-                    ) : (
-                      <span className={`text-3xl sm:text-4xl md:text-5xl font-bold transition-colors duration-500`} style={{ color: healthScore.color }}>{healthScore.score}</span>
-                    )}
-                  </div>
-                  <p className="text-[11px] sm:text-xs md:text-sm font-bold mt-2" style={{ color: isBasicMode ? '#71717a' : healthScore.color }}>
-                    {isBasicMode ? 'SBLOCCA ANALISI' : healthScore.status}
-                  </p>
-                  
-                  {!isBasicMode && healthScore.riskFactors.length > 0 && (
-                    <div className="mt-4 w-full text-left px-2">
-                      <p className="text-[10px] uppercase font-bold text-white/40 mb-1">Fattori di Rischio:</p>
-                      <ul className="space-y-1">
-                        {healthScore.riskFactors.map((factor, idx) => (
-                          <li key={idx} className="text-[10px] sm:text-xs text-white/70 flex items-start gap-2">
-                            <span className="text-red-400 mt-0.5">•</span>
-                            <span>{factor}</span>
-                          </li>
-                        ))}
-                      </ul>
                     </div>
                   )}
-                </motion.div>
+                </div>
               </div>
-              
+
               <div key="temp" 
                 className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
                 {...tempLongPress}
@@ -589,6 +574,7 @@ export default function Dashboard({
                     colorClass="bg-red-500/20" 
                     onClick={() => setEditingParam('temp')}
                     isEditMode={isEditMode}
+                    centered={true}
                   />
                 </div>
               </div>
@@ -610,6 +596,7 @@ export default function Dashboard({
                     colorClass="bg-sky-500/20" 
                     onClick={() => setEditingParam('ph')}
                     isEditMode={isEditMode}
+                    centered={true}
                   />
                 </div>
               </div>
@@ -631,6 +618,7 @@ export default function Dashboard({
                     colorClass="bg-amber-500/20" 
                     onClick={() => setEditingParam('nitrates')}
                     isEditMode={isEditMode}
+                    centered={true}
                   />
                 </div>
               </div>
@@ -652,26 +640,7 @@ export default function Dashboard({
                     colorClass="bg-indigo-500/20" 
                     onClick={() => setEditingParam('kh')}
                     isEditMode={isEditMode}
-                  />
-                </div>
-              </div>
-
-              <div key="inventory" 
-                className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
-                {...inventoryLongPress}
-              >
-                <div className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}>
-                  {isEditMode && (
-                    <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
-                      <GripVertical size={20} />
-                    </div>
-                  )}
-                  <StatCard 
-                    icon={<DollarSign size={20} className="text-lime-300" />} 
-                    label={t('inventory_total_value')} 
-                    value={formatCurrency(inventoryValue)} 
-                    colorClass="bg-lime-500/20"
-                    isEditMode={isEditMode}
+                    centered={true}
                   />
                 </div>
               </div>
@@ -734,41 +703,6 @@ export default function Dashboard({
                 </div>
               </div>
 
-              <div key="reminders" 
-                className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
-                {...remindersLongPress}
-              >
-                <div className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}>
-                  {isEditMode && (
-                    <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
-                      <GripVertical size={20} />
-                    </div>
-                  )}
-                  <StatCard 
-                    icon={<Bell size={20} className={overdueReminders > 0 ? "text-red-400 animate-pulse" : "text-emerald-300"} />} 
-                    label="Promemoria" 
-                    value={mostUrgentReminder ? (
-                      <span className="flex flex-col">
-                        <span className="truncate leading-tight">{mostUrgentReminder.task}</span>
-                        <span className="text-[10px] sm:text-xs opacity-50 font-medium mt-0.5">
-                          Scade: {new Date(mostUrgentReminder.nextDue).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
-                        </span>
-                      </span>
-                    ) : 'Nessuno'} 
-                    colorClass={overdueReminders > 0 ? "bg-red-500/20" : "bg-emerald-500/20"} 
-                    onClick={() => setShowRemindersModal(true)}
-                    isEditMode={isEditMode}
-                  />
-                  {overdueReminders > 0 && !isEditMode && (
-                    <div className="absolute top-2 right-2 flex gap-1">
-                      <div className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-bounce">
-                        !
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
               <div key="accessories" 
                 className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
                 {...accessoriesLongPress}
@@ -786,6 +720,28 @@ export default function Dashboard({
                     colorClass="bg-indigo-500/20" 
                     onClick={() => setShowAccessoriesModal(true)}
                     isEditMode={isEditMode}
+                    centered={true}
+                  />
+                </div>
+              </div>
+
+              <div key="inventory" 
+                className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
+                {...inventoryLongPress}
+              >
+                <div className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}>
+                  {isEditMode && (
+                    <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
+                      <GripVertical size={20} />
+                    </div>
+                  )}
+                  <StatCard 
+                    icon={<DollarSign size={20} className="text-lime-300" />} 
+                    label={t('inventory_total_value')} 
+                    value={formatCurrency(inventoryValue)} 
+                    colorClass="bg-lime-500/20"
+                    isEditMode={isEditMode}
+                    centered={true}
                   />
                 </div>
               </div>

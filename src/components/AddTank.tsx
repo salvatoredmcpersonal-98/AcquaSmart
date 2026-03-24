@@ -54,7 +54,7 @@ export default function AddTank({ onTankAdded, onLogout, onCancel, existingTanks
   };
 
   return (
-    <div className="relative overflow-hidden min-h-screen bg-zinc-900">
+    <div className="relative overflow-hidden min-h-screen bg-zinc-950">
       {/* Back Peek Label */}
       {onCancel && (
         <motion.div 

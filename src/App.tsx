@@ -1,12 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'motion/react';
+import { Bot, Sparkles } from 'lucide-react';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Header from './components/Header';
 import Paywall from './components/Paywall';
 import Settings from './components/Settings';
 import AddTank from './components/AddTank';
+import AIConsultant from './components/AIConsultant';
 import { useTrial } from './hooks/useTrial';
 import usePersistentState from './hooks/usePersistentState';
 
@@ -16,6 +18,7 @@ export default function App() {
   const [tanks, setTanks] = usePersistentState('userTanks_v2', []);
   const [currentTankIndex, setCurrentTankIndex] = usePersistentState('currentTankIndex', 0);
   const [isAddingNewTank, setIsAddingNewTank] = useState(false);
+  const [showAIConsultant, setShowAIConsultant] = useState(false);
   const [isBasicMode, setIsBasicMode] = usePersistentState('isBasicMode', false);
   const [testLogs, setTestLogs] = usePersistentState('userTestLogs_v3', []);
   const initialInhabitants = {
@@ -212,6 +215,14 @@ export default function App() {
     const currentAccessories = accessories.filter(a => a.tankId === currentTankId);
     const currentReminders = reminders.filter(r => r.tankId === currentTankId);
 
+    const aiContext = {
+      tank: currentTank,
+      inhabitants: currentInhabitants,
+      latestLogs: currentTestLogs[0] || null,
+      reminders: currentReminders,
+      accessories: currentAccessories
+    };
+
     return (
       <motion.div
         key={`${currentPage}-${currentTankId}`}
@@ -252,6 +263,14 @@ export default function App() {
             onShowPaywall={() => setIsBasicMode(false)}
           />
         )}
+        <AnimatePresence>
+          {showAIConsultant && (
+            <AIConsultant 
+              onClose={() => setShowAIConsultant(false)} 
+              context={aiContext}
+            />
+          )}
+        </AnimatePresence>
       </motion.div>
     );
   };
@@ -289,6 +308,28 @@ export default function App() {
           {renderPage()}
         </AnimatePresence>
       </main>
+
+      {/* Dynamic AI Consultant Button */}
+      <motion.button
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setShowAIConsultant(true)}
+        className="fixed bottom-6 right-6 z-[60] flex items-center gap-3 bg-emerald-500 text-white px-5 py-4 rounded-3xl shadow-2xl shadow-emerald-500/40 border border-white/20 group overflow-hidden"
+      >
+        <motion.div
+          animate={{ rotate: [0, -10, 10, -10, 0] }}
+          transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+        >
+          <Bot size={24} />
+        </motion.div>
+        <span className="font-bold text-sm uppercase tracking-widest hidden sm:inline">AI Expert</span>
+        <Sparkles size={16} className="text-amber-300 absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+        
+        {/* Glow effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+      </motion.button>
     </div>
   );
 }

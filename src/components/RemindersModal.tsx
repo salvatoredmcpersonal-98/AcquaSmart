@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Plus, Trash2, Bell, Calendar, Clock, CheckCircle2, AlertCircle, Droplets, Leaf, Sparkles, TestTube2, Waves, Info } from 'lucide-react';
+import { X, Plus, Trash2, Bell, Calendar, Clock, CheckCircle2, AlertCircle, Droplets, Leaf, Sparkles, TestTube2, Waves, Info, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { FISH_MASTER_DATA } from '../constants/masterData';
 
 const TASK_SUGGESTIONS = [
   { name: 'Rabbocco acqua', icon: '💧', lucide: Droplets },
@@ -9,6 +10,7 @@ const TASK_SUGGESTIONS = [
   { name: 'Cambio acqua', icon: '✨', lucide: Sparkles },
   { name: 'Controllo Valori', icon: '🧪', lucide: TestTube2 },
   { name: 'Pulizia Filtro', icon: '🧼', lucide: Waves },
+  { name: 'Gravidanza Pesci', icon: '🤰', lucide: Heart },
   { name: 'Altro', icon: '📝', lucide: Info },
 ];
 
@@ -19,8 +21,19 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
   const [newDescription, setNewDescription] = useState('');
   const [newFrequency, setNewFrequency] = useState(7);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedSpecies, setSelectedSpecies] = useState('');
 
   const isNotificationMode = initialFilter === 'overdue';
+
+  useEffect(() => {
+    if (newTask === 'Gravidanza Pesci' && selectedSpecies) {
+      const species = FISH_MASTER_DATA.find(f => f.name === selectedSpecies);
+      if (species && species.breeding) {
+        setNewDescription(species.breeding.description);
+        setNewFrequency(species.breeding.days);
+      }
+    }
+  }, [newTask, selectedSpecies]);
 
   const isOverdue = (nextDue: string) => {
     return new Date(nextDue) < new Date();
@@ -35,9 +48,13 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
     if (!newTask.trim()) return;
 
     const start = new Date(startDate);
+    const taskName = newTask === 'Gravidanza Pesci' && selectedSpecies 
+      ? `Gravidanza: ${selectedSpecies}` 
+      : newTask;
+
     const newReminder = {
       id: Date.now(),
-      task: newTask,
+      task: taskName,
       description: newDescription,
       frequency: newFrequency,
       lastDone: start.toISOString(),
@@ -48,6 +65,7 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
     setNewTask('');
     setNewDescription('');
     setNewFrequency(7);
+    setSelectedSpecies('');
     setShowAddForm(false);
   };
 
@@ -127,7 +145,12 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
                         <button
                           key={suggestion.name}
                           type="button"
-                          onClick={() => setNewTask(suggestion.name)}
+                          onClick={() => {
+                            setNewTask(suggestion.name);
+                            if (suggestion.name !== 'Gravidanza Pesci') {
+                              setSelectedSpecies('');
+                            }
+                          }}
                           className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-xs font-medium ${
                             newTask === suggestion.name 
                               ? 'bg-emerald-500 border-emerald-500 text-white' 
@@ -139,6 +162,51 @@ export default function RemindersModal({ reminders, onUpdate, onClose, initialFi
                         </button>
                       ))}
                     </div>
+
+                    {newTask === 'Gravidanza Pesci' && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-3 space-y-3"
+                      >
+                        <div>
+                          <label className="block text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2 ml-1">
+                            Seleziona la specie
+                          </label>
+                          <select
+                            value={selectedSpecies}
+                            onChange={(e) => setSelectedSpecies(e.target.value)}
+                            className="w-full bg-white/5 border border-emerald-500/30 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm appearance-none cursor-pointer"
+                          >
+                            <option value="" disabled className="bg-zinc-900">Scegli un pesce...</option>
+                            {FISH_MASTER_DATA.filter(f => f.breeding).map(fish => (
+                              <option key={fish.name} value={fish.name} className="bg-zinc-900">
+                                {fish.name} ({fish.breeding?.type})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {selectedSpecies && (
+                          <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl flex gap-3 items-start"
+                          >
+                            <div className="bg-emerald-500/20 p-1.5 rounded-lg text-emerald-400 mt-0.5">
+                              <Info size={14} />
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-xs font-bold text-emerald-400">Info Riproduzione</p>
+                              <p className="text-[11px] text-white/70 leading-relaxed">
+                                {FISH_MASTER_DATA.find(f => f.name === selectedSpecies)?.breeding?.description}
+                              </p>
+                            </div>
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    )}
+
                     <input 
                       type="text"
                       value={newTask}
