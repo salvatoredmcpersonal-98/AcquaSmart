@@ -8,6 +8,8 @@ export interface Suggestion {
   type?: string;
   lumen?: number;
   watt?: number;
+  isOpen?: boolean;
+  includedLampModel?: string;
 }
 
 export const FILTER_SUGGESTIONS: Record<string, Suggestion[]> = {
@@ -73,34 +75,34 @@ export const TANK_SUGGESTIONS: Record<string, Suggestion[]> = {
     { model: 'Tetra AquaArt 30', recommendedVolume: '30L', dimensions: '39 x 28 x 43 cm', priceRange: '€70 – €85', minPrice: 70 },
   ],
   'medium': [ // 60L - 125L
-    { model: 'Juwell Primo 60', recommendedVolume: '60L', dimensions: '61 x 31 x 37 cm', priceRange: '€100 – €120', minPrice: 100 },
-    { model: 'Juwell Primo 70', recommendedVolume: '70L', dimensions: '61 x 31 x 44 cm', priceRange: '€115 – €135', minPrice: 115 },
-    { model: 'Juwell Rio 125 LED', recommendedVolume: '125L', dimensions: '81 x 36 x 50 cm', priceRange: '€280 – €330', minPrice: 280 },
-    { model: 'Askoll Pure LED L', recommendedVolume: '68L', dimensions: '56 x 36 x 43 cm', priceRange: '€160 – €190', minPrice: 160 },
-    { model: 'Askoll Emotions 100', recommendedVolume: '120L', dimensions: '102 x 40 x 40 cm', priceRange: '€250 – €290', minPrice: 250 },
-    { model: 'Eheim Vivaline 126', recommendedVolume: '126L', dimensions: '81 x 36 x 45 cm', priceRange: '€350 – €400', minPrice: 350 },
-    { model: 'Ferplast Capri 60', recommendedVolume: '60L', dimensions: '60 x 31 x 39 cm', priceRange: '€90 – €110', minPrice: 90 },
-    { model: 'Ferplast Capri 80', recommendedVolume: '100L', dimensions: '80 x 31 x 46 cm', priceRange: '€140 – €170', minPrice: 140 },
+    { model: 'Juwell Primo 60', recommendedVolume: '60L', dimensions: '61 x 31 x 37 cm', priceRange: '€100 – €120', minPrice: 100, includedLampModel: 'NovoLux 60 LED' },
+    { model: 'Juwell Primo 70', recommendedVolume: '70L', dimensions: '61 x 31 x 44 cm', priceRange: '€115 – €135', minPrice: 115, includedLampModel: 'NovoLux 60 LED' },
+    { model: 'Juwell Rio 125 LED', recommendedVolume: '125L', dimensions: '81 x 36 x 50 cm', priceRange: '€280 – €330', minPrice: 280, includedLampModel: 'MultiLux LED 80' },
+    { model: 'Askoll Pure LED L', recommendedVolume: '68L', dimensions: '56 x 36 x 43 cm', priceRange: '€160 – €190', minPrice: 160, includedLampModel: 'Askoll LED System' },
+    { model: 'Askoll Emotions 100', recommendedVolume: '120L', dimensions: '102 x 40 x 40 cm', priceRange: '€250 – €290', minPrice: 250, includedLampModel: 'Askoll LED System' },
+    { model: 'Eheim Vivaline 126', recommendedVolume: '126L', dimensions: '81 x 36 x 45 cm', priceRange: '€350 – €400', minPrice: 350, includedLampModel: 'Eheim ClassicLED' },
+    { model: 'Ferplast Capri 60', recommendedVolume: '60L', dimensions: '60 x 31 x 39 cm', priceRange: '€90 – €110', minPrice: 90, includedLampModel: 'Ferplast LED' },
+    { model: 'Ferplast Capri 80', recommendedVolume: '100L', dimensions: '80 x 31 x 46 cm', priceRange: '€140 – €170', minPrice: 140, includedLampModel: 'Ferplast LED' },
   ],
   'large': [ // 180L - 350L
-    { model: 'Juwell Rio 180 LED', recommendedVolume: '180L', dimensions: '101 x 41 x 50 cm', priceRange: '€350 – €420', minPrice: 350 },
-    { model: 'Juwell Rio 240 LED', recommendedVolume: '240L', dimensions: '121 x 41 x 55 cm', priceRange: '€450 – €520', minPrice: 450 },
-    { model: 'Juwell Vision 260', recommendedVolume: '260L', dimensions: '121 x 46 x 64 cm (Curvo)', priceRange: '€550 – €620', minPrice: 550 },
-    { model: 'Askoll Emotions 120', recommendedVolume: '233L', dimensions: '121 x 40 x 56 cm', priceRange: '€450 – €500', minPrice: 450 },
-    { model: 'Eheim Incpiria 230', recommendedVolume: '230L', dimensions: '70 x 60 x 65 cm', priceRange: '€900 – €1.100', minPrice: 900 },
-    { model: 'Fluval Roma 240', recommendedVolume: '240L', dimensions: '120 x 40 x 55 cm', priceRange: '€400 – €480', minPrice: 400 },
-    { model: 'Oase HighLine 300', recommendedVolume: '302L', dimensions: '115 x 50 x 56 cm', priceRange: '€1.200 – €1.500', minPrice: 1200 },
-    { model: 'Juwell Rio 350 LED', recommendedVolume: '350L', dimensions: '121 x 51 x 66 cm', priceRange: '€650 – €750', minPrice: 650 },
+    { model: 'Juwell Rio 180 LED', recommendedVolume: '180L', dimensions: '101 x 41 x 50 cm', priceRange: '€350 – €420', minPrice: 350, includedLampModel: 'MultiLux LED 100' },
+    { model: 'Juwell Rio 240 LED', recommendedVolume: '240L', dimensions: '121 x 41 x 55 cm', priceRange: '€450 – €520', minPrice: 450, includedLampModel: 'MultiLux LED 120' },
+    { model: 'Juwell Vision 260', recommendedVolume: '260L', dimensions: '121 x 46 x 64 cm (Curvo)', priceRange: '€550 – €620', minPrice: 550, includedLampModel: 'MultiLux LED 120' },
+    { model: 'Askoll Emotions 120', recommendedVolume: '233L', dimensions: '121 x 40 x 56 cm', priceRange: '€450 – €500', minPrice: 450, includedLampModel: 'Askoll LED System' },
+    { model: 'Eheim Incpiria 230', recommendedVolume: '230L', dimensions: '70 x 60 x 65 cm', priceRange: '€900 – €1.100', minPrice: 900, includedLampModel: 'Eheim PowerLED+' },
+    { model: 'Fluval Roma 240', recommendedVolume: '240L', dimensions: '120 x 40 x 55 cm', priceRange: '€400 – €480', minPrice: 400, includedLampModel: 'Fluval LED' },
+    { model: 'Oase HighLine 300', recommendedVolume: '302L', dimensions: '115 x 50 x 56 cm', priceRange: '€1.200 – €1.500', minPrice: 1200, includedLampModel: 'Oase HeliaLux' },
+    { model: 'Juwell Rio 350 LED', recommendedVolume: '350L', dimensions: '121 x 51 x 66 cm', priceRange: '€650 – €750', minPrice: 650, includedLampModel: 'MultiLux LED 120' },
   ],
   'scaper': [ // Vasche Nude
-    { model: 'ADA Cube Garden 60P', recommendedVolume: '60L', dimensions: '60 x 30 x 36 cm', priceRange: '€160 – €190', minPrice: 160 },
-    { model: 'AmTra Ultra Clear 60', recommendedVolume: '63L', dimensions: '60 x 30 x 35 cm', priceRange: '€90 – €110', minPrice: 90 },
-    { model: 'AmTra Ultra Clear 90', recommendedVolume: '180L', dimensions: '90 x 45 x 45 cm', priceRange: '€240 – €280', minPrice: 240 },
-    { model: 'Blau Gran Cubic 90', recommendedVolume: '182L', dimensions: '90 x 45 x 45 cm', priceRange: '€260 – €300', minPrice: 260 },
-    { model: 'ILA Glass 45C', recommendedVolume: '91L', dimensions: '45 x 45 x 45 cm', priceRange: '€130 – €150', minPrice: 130 },
-    { model: 'Dennerle Scaper\'s Tank', recommendedVolume: '50L', dimensions: '45 x 36 x 31 cm', priceRange: '€80 – €100', minPrice: 80 },
-    { model: 'AmTra Ultra Clear 120', recommendedVolume: '300L', dimensions: '120 x 50 x 50 cm', priceRange: '€450 – €550', minPrice: 450 },
-    { model: 'Twinstar Light Glass 60', recommendedVolume: '60L', dimensions: '60 x 30 x 36 cm', priceRange: '€120 – €140', minPrice: 120 },
+    { model: 'ADA Cube Garden 60P', recommendedVolume: '60L', dimensions: '60 x 30 x 36 cm', priceRange: '€160 – €190', minPrice: 160, isOpen: true },
+    { model: 'AmTra Ultra Clear 60', recommendedVolume: '63L', dimensions: '60 x 30 x 35 cm', priceRange: '€90 – €110', minPrice: 90, isOpen: true },
+    { model: 'AmTra Ultra Clear 90', recommendedVolume: '180L', dimensions: '90 x 45 x 45 cm', priceRange: '€240 – €280', minPrice: 240, isOpen: true },
+    { model: 'Blau Gran Cubic 90', recommendedVolume: '182L', dimensions: '90 x 45 x 45 cm', priceRange: '€260 – €300', minPrice: 260, isOpen: true },
+    { model: 'ILA Glass 45C', recommendedVolume: '91L', dimensions: '45 x 45 x 45 cm', priceRange: '€130 – €150', minPrice: 130, isOpen: true },
+    { model: 'Dennerle Scaper\'s Tank', recommendedVolume: '50L', dimensions: '45 x 36 x 31 cm', priceRange: '€80 – €100', minPrice: 80, isOpen: true },
+    { model: 'AmTra Ultra Clear 120', recommendedVolume: '300L', dimensions: '120 x 50 x 50 cm', priceRange: '€450 – €550', minPrice: 450, isOpen: true },
+    { model: 'Twinstar Light Glass 60', recommendedVolume: '60L', dimensions: '60 x 30 x 36 cm', priceRange: '€120 – €140', minPrice: 120, isOpen: true },
   ]
 };
 

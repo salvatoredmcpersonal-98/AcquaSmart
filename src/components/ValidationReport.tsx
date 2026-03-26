@@ -1,27 +1,77 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertCircle, CheckCircle2, Info, Zap, Droplets, Activity, LayoutGrid, ShieldCheck } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Info, Zap, Droplets, Activity, LayoutGrid, ShieldCheck, Bot, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 import { ValidationResult, HealthScoreResult } from '../services/validationService';
+import { calculateCorrection, parseDimensions } from '../services/waterChemistryService';
 import HistoryChart from './HistoryChart';
 
 interface Props {
   result: ValidationResult;
   testLogs: any[];
   healthScore?: HealthScoreResult;
+  tank?: any;
+  accessories?: any[];
 }
 
-export default function ValidationReport({ result, testLogs, healthScore }: Props) {
+export default function ValidationReport({ result, testLogs, healthScore, tank, accessories = [] }: Props) {
   const { t } = useTranslation();
+  const [headerDismissed, setHeaderDismissed] = useState(false);
+  const [pendingHeaderDismiss, setPendingHeaderDismiss] = useState(false);
+
+  const displayHealthScore = useMemo(() => {
+    if (!healthScore) return null;
+    if (!headerDismissed || result.status !== 'Warning') return healthScore;
+
+    let newScore = healthScore.score;
+    const newRiskFactors = [...healthScore.riskFactors];
+
+    // If the warning header is dismissed, we "undo" the penalties that contributed to the Warning status
+    // In calculateHealthScore, the main penalty that aligns with a "Warning" result status is Algae Risk
+    if (result.checks.algae.status === 'warning') {
+      const index = newRiskFactors.findIndex(rf => rf.toLowerCase().includes("alghe"));
+      if (index !== -1) {
+        newScore += 20;
+        newRiskFactors.splice(index, 1);
+      }
+    }
+
+    // Ensure score is capped
+    newScore = Math.max(0, Math.min(100, newScore));
+
+    // Recalculate status and color for the UI
+    let status: HealthScoreResult['status'] = 'OTTIMO';
+    let color = '#00FF00';
+
+    if (newScore < 50) {
+      status = 'CRITICO';
+      color = '#FF0000';
+    } else if (newScore < 70) {
+      status = 'SQUILIBRATO';
+      color = '#FF8C00';
+    } else if (newScore < 90) {
+      status = 'STABILE';
+      color = '#FFD700';
+    }
+
+    return {
+      ...healthScore,
+      score: newScore,
+      status,
+      color,
+      riskFactors: newRiskFactors
+    };
+  }, [healthScore, headerDismissed, result.status, result.checks.algae.status]);
+
   const radarData = useMemo(() => [
     { subject: t('validation_subject_chemistry'), A: result.checks.chemical.status === 'ok' ? 100 : 20, fullMark: 100 },
-    { subject: t('validation_subject_light'), A: result.checks.lighting.status === 'ok' ? 100 : 20, fullMark: 100 },
-    { subject: t('validation_subject_algae'), A: result.checks.algae.status === 'ok' ? 100 : 50, fullMark: 100 },
-    { subject: t('validation_subject_ethology'), A: result.checks.ethological.status === 'ok' ? 100 : 20, fullMark: 100 },
-    { subject: t('validation_subject_sex'), A: result.checks.sexRatio.status === 'ok' ? 100 : result.checks.sexRatio.status === 'warning' ? 50 : 20, fullMark: 100 },
-    { subject: t('validation_subject_load'), A: result.checks.load.status === 'ok' ? 100 : 50, fullMark: 100 },
-  ], [result, t]);
+    { subject: t('validation_subject_light'), A: (result.checks.lighting.status === 'ok' || (headerDismissed && result.status === 'Warning')) ? 100 : 20, fullMark: 100 },
+    { subject: t('validation_subject_algae'), A: (result.checks.algae.status === 'ok' || (headerDismissed && result.status === 'Warning')) ? 100 : 50, fullMark: 100 },
+    { subject: t('validation_subject_ethology'), A: (result.checks.ethological.status === 'ok' || (headerDismissed && result.status === 'Warning')) ? 100 : 20, fullMark: 100 },
+    { subject: t('validation_subject_sex'), A: (result.checks.sexRatio.status === 'ok' || (headerDismissed && result.status === 'Warning')) ? 100 : result.checks.sexRatio.status === 'warning' ? 50 : 20, fullMark: 100 },
+    { subject: t('validation_subject_load'), A: (result.checks.load.status === 'ok' || (headerDismissed && result.status === 'Warning')) ? 100 : 50, fullMark: 100 },
+  ], [result, t, headerDismissed]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -49,31 +99,61 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
     }
   };
 
+  const getTagline = () => {
+    if (result.status === 'Errore Critico') {
+      return result.explanation[0] || t('validation_status_critical_tagline');
+    }
+    if (result.status === 'Warning') {
+      return result.explanation[0] || t('validation_status_warning_tagline');
+    }
+    return t('validation_status_optimal_tagline');
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Status */}
-      <div className={`p-5 rounded-2xl border ${getStatusColor(result.status)} flex items-center justify-between shadow-lg shadow-black/20`}>
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-white/10 rounded-xl">
-            <ShieldCheck size={32} className="animate-pulse" />
-          </div>
-          <div>
-            <h3 className="font-black text-xl uppercase tracking-tighter">
-              {translateStatus(result.status)}
-            </h3>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/20 text-white uppercase tracking-widest">
-                {result.ecosystemType}
-              </span>
-              <p className="text-xs font-medium opacity-90 italic">"{t('validation_tagline')}"</p>
+      {!headerDismissed && (
+        <motion.div 
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          onClick={() => {
+            if (result.status === 'Warning') {
+              setPendingHeaderDismiss(true);
+            }
+          }}
+          className={`p-5 rounded-2xl border ${getStatusColor(result.status)} flex items-center justify-between shadow-lg shadow-black/20 ${
+            result.status === 'Warning' ? 'cursor-pointer hover:bg-amber-500/20 transition-colors group' : ''
+          }`}
+        >
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-white/10 rounded-xl">
+              <ShieldCheck size={32} className="animate-pulse" />
+            </div>
+            <div>
+              <h3 className="font-black text-xl uppercase tracking-tighter">
+                {translateStatus(result.status)}
+              </h3>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/20 text-white uppercase tracking-widest">
+                  {result.deducedStyle || result.ecosystemType}
+                </span>
+                <p className="text-xs font-medium opacity-90 italic">"{getTagline()}"</p>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="text-right hidden sm:block">
-          <p className="text-[10px] uppercase font-bold opacity-50">{t('validation_date_label')}</p>
-          <p className="text-xs font-mono">{new Date().toLocaleDateString()}</p>
-        </div>
-      </div>
+          <div className="flex items-center gap-4">
+            {result.status === 'Warning' && (
+              <div className="p-1.5 opacity-0 group-hover:opacity-100 text-white/40 transition-opacity">
+                <X size={16} />
+              </div>
+            )}
+            <div className="text-right hidden sm:block">
+              <p className="text-[10px] uppercase font-bold opacity-50">{t('validation_date_label')}</p>
+              <p className="text-xs font-mono">{new Date().toLocaleDateString()}</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* 1. ANALISI BIOTIPO */}
       <div className="bg-indigo-500/10 p-5 rounded-2xl border border-indigo-500/20 relative overflow-hidden">
@@ -86,6 +166,11 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
         <p className="text-lg font-bold text-white leading-tight">
           {result.biotypeAnalysis}
         </p>
+        {result.styleMessage && (
+          <p className="text-xs text-indigo-300/60 mt-2 font-medium italic">
+            {result.styleMessage}
+          </p>
+        )}
       </div>
 
       {/* 2. STATO DI SALUTE & CONSIGLIO SALVAVITA */}
@@ -110,22 +195,22 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
                 cx="64"
                 cy="64"
                 r="58"
-                stroke={healthScore?.color || '#818cf8'}
+                stroke={displayHealthScore?.color || '#818cf8'}
                 strokeWidth="8"
                 fill="transparent"
                 strokeDasharray={364.4}
-                strokeDashoffset={364.4 - (364.4 * (healthScore?.score || 0)) / 100}
+                strokeDashoffset={364.4 - (364.4 * (displayHealthScore?.score || 0)) / 100}
                 strokeLinecap="round"
                 className="transition-all duration-1000 ease-out"
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-4xl font-black text-white">{healthScore?.score || 0}</span>
+              <span className="text-4xl font-black text-white">{displayHealthScore?.score || 0}</span>
               <span className="text-[10px] font-bold text-white/40 uppercase">{t('validation_points_label')}</span>
             </div>
           </div>
-          <p className="mt-4 font-bold text-sm uppercase tracking-widest" style={{ color: healthScore?.color }}>
-            {healthScore?.status ? translateStatus(healthScore.status) : t('validation_analyzing')}
+          <p className="mt-4 font-bold text-sm uppercase tracking-widest" style={{ color: displayHealthScore?.color }}>
+            {displayHealthScore?.status ? translateStatus(displayHealthScore.status) : t('validation_analyzing')}
           </p>
         </div>
 
@@ -174,6 +259,60 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
             {result.technicalData.totalWeight > 0 ? `~${result.technicalData.totalWeight.toFixed(0)} kg` : '~ 0 kg'}
           </p>
         </div>
+        <div className="bg-white/5 p-3 rounded-xl border border-white/10">
+          <span className="text-[10px] uppercase text-white/40 font-bold">{t('validation_energy_load_title')}</span>
+          <p className={`text-xl font-bold ${
+            result.technicalData.energyLoad.status === 'high' ? 'text-red-400' :
+            result.technicalData.energyLoad.status === 'medium' ? 'text-amber-400' : 
+            result.technicalData.energyLoad.status === 'low' ? 'text-blue-400' : 'text-emerald-400'
+          }`}>
+            {result.technicalData.energyLoad.value.toFixed(0)}
+          </p>
+        </div>
+      </div>
+
+      {/* Photoperiod Section */}
+      <div className="bg-amber-500/10 p-5 rounded-2xl border border-amber-500/20 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 opacity-10">
+          <Zap size={80} />
+        </div>
+        <h4 className="text-xs font-bold text-amber-400 uppercase mb-3 flex items-center gap-2 tracking-widest">
+          <Zap size={14} /> {t('validation_photoperiod_title')}
+        </h4>
+        <div className="flex items-center gap-4">
+          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg transition-all ${
+            result.technicalData.photoperiod.isOptimal 
+              ? 'bg-emerald-500/20 text-emerald-400 shadow-emerald-500/20' 
+              : 'bg-amber-500/20 text-amber-400 shadow-amber-500/20'
+          }`}>
+            {result.technicalData.photoperiod.isOptimal ? (
+              <CheckCircle2 size={32} />
+            ) : (
+              <span className="text-2xl font-black">{result.technicalData.photoperiod.recommendedHours}h</span>
+            )}
+          </div>
+          <div>
+            <p className="text-xl font-black text-white leading-tight mb-1">
+              {result.technicalData.photoperiod.isOptimal 
+                ? t('validation_photoperiod_optimal_title') 
+                : t('validation_photoperiod_hours', { hours: result.technicalData.photoperiod.recommendedHours })}
+            </p>
+            {result.technicalData.photoperiod.advice && (
+              <p className={`text-sm font-medium italic ${
+                result.technicalData.photoperiod.isOptimal ? 'text-emerald-200/80' : 'text-amber-200/80'
+              }`}>
+                {t(result.technicalData.photoperiod.advice)}
+              </p>
+            )}
+          </div>
+        </div>
+        {result.technicalData.photoperiod.techAdvice && (
+          <div className="mt-4 p-3 bg-white/5 rounded-xl border border-white/10">
+            <p className="text-xs text-white/70 leading-relaxed">
+              {t(result.technicalData.photoperiod.techAdvice)}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Charts Section */}
@@ -207,7 +346,7 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
                 <motion.div 
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  key={i} 
+                  key={`exp-${i}-${exp.substring(0, 10)}`} 
                   className={`text-sm p-3 rounded-xl border ${
                     exp.includes('🛑') ? 'bg-red-500/10 border-red-500/20 text-red-200' : 
                     exp.includes('⚠️') ? 'bg-amber-500/10 border-amber-500/20 text-amber-200' : 
@@ -318,7 +457,7 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
           <div className="space-y-4">
             {result.purchaseSuggestions.map((sug, i) => (
               <motion.div 
-                key={i}
+                key={`sug-${i}-${sug.fishName}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
@@ -351,6 +490,96 @@ export default function ValidationReport({ result, testLogs, healthScore }: Prop
           <HistoryChart data={testLogs} />
         </div>
       </div>
+
+      {/* Water Chemistry Expert Section */}
+      {result.checks.chemical.targetGh !== undefined && (
+        <div className="bg-emerald-500/10 p-6 rounded-2xl border border-emerald-500/20 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <Droplets size={80} />
+          </div>
+          <h4 className="text-xs font-bold text-emerald-400 uppercase mb-4 flex items-center gap-2 tracking-widest">
+            <Bot size={14} /> {t('validation_water_chemistry_expert_title')}
+          </h4>
+          
+          <div className="space-y-4 relative z-10">
+            {(() => {
+              const latestLog = testLogs[0] || {};
+              const ghAtt = latestLog.gh || 0;
+              const ghTar = result.checks.chemical.targetGh || 0;
+              const vNet = result.technicalData.netVolume || 0;
+              
+              const correction = calculateCorrection(vNet, ghAtt, ghTar);
+
+              return (
+                <>
+                  {correction && (
+                    <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                      <p className="text-white font-medium leading-relaxed">
+                        {correction.type === 'lower' 
+                          ? t('gh_correction_lower', { target: ghTar, volume: correction.value.toFixed(1) })
+                          : t('gh_correction_higher', { target: ghTar, grams: correction.value.toFixed(1) })
+                        }
+                      </p>
+                    </div>
+                  )}
+
+                  {correction && (
+                    <p className="text-[10px] text-emerald-400/60 font-bold uppercase tracking-widest flex items-center gap-2">
+                      <AlertCircle size={12} /> {t('gh_safety_warning')}
+                    </p>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Dismiss Confirmation Modal */}
+      {pendingHeaderDismiss && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPendingHeaderDismiss(false)}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="relative w-full max-w-sm bg-zinc-900 border border-white/10 rounded-3xl shadow-2xl p-6 text-center"
+          >
+            <div className="w-16 h-16 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-400 mx-auto mb-4">
+              <AlertCircle size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">
+              {t('validation_dismiss_confirm_title', 'Nascondere questo messaggio?')}
+            </h3>
+            <p className="text-sm text-white/60 mb-8 leading-relaxed">
+              {t('validation_dismiss_confirm_message', 'Vuoi continuare a visualizzare questo avviso o preferisci nasconderlo perché non ti interessa?')}
+            </p>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setPendingHeaderDismiss(false)}
+                className="py-3 px-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-colors"
+              >
+                {t('validation_dismiss_keep', 'Mantieni')}
+              </button>
+              <button
+                onClick={() => {
+                  setHeaderDismissed(true);
+                  setPendingHeaderDismiss(false);
+                }}
+                className="py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors"
+              >
+                {t('validation_dismiss_hide', 'Nascondi')}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

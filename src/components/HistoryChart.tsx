@@ -31,6 +31,18 @@ const CustomTooltip = memo(({ active, payload, label }: { active?: boolean; payl
                             <span className="font-semibold ml-2">{data.nitrates} mg/L</span>
                         </li>
                     )}
+                    {data.kh !== null && typeof data.kh !== 'undefined' && (
+                        <li style={{ color: '#6366f1' }}>
+                            {t('log_test_kh')}: 
+                            <span className="font-semibold ml-2">{data.kh} °dKH</span>
+                        </li>
+                    )}
+                    {data.gh !== null && typeof data.gh !== 'undefined' && (
+                        <li style={{ color: '#3b82f6' }}>
+                            {t('log_test_gh')}: 
+                            <span className="font-semibold ml-2">{data.gh} °dGH</span>
+                        </li>
+                    )}
                 </ul>
             </div>
         );
@@ -65,6 +77,8 @@ const HistoryChart = memo(({ data }: HistoryChartProps) => {
     const hasTempData = hasData('temp');
     const hasPhData = hasData('ph');
     const hasNitratesData = hasData('nitrates');
+    const hasKhData = hasData('kh');
+    const hasGhData = hasData('gh');
 
     return (
         <div className="w-full h-full">
@@ -93,6 +107,8 @@ const HistoryChart = memo(({ data }: HistoryChartProps) => {
                     {hasPhData && <Line connectNulls type="monotone" dataKey="ph" name="pH" stroke="#38bdf8" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />}
                     {hasTempData && <Line connectNulls type="monotone" dataKey="temp" name={t('log_test_temp')} stroke="#f87171" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />}
                     {hasNitratesData && <Line connectNulls type="monotone" dataKey="nitrates" name={t('log_test_nitrates')} stroke="#fbbf24" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />}
+                    {hasKhData && <Line connectNulls type="monotone" dataKey="kh" name={t('log_test_kh')} stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />}
+                    {hasGhData && <Line connectNulls type="monotone" dataKey="gh" name={t('log_test_gh')} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />}
                 </LineChart>
             </ResponsiveContainer>
         </div>

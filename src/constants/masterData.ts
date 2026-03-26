@@ -22,9 +22,13 @@ export interface PlantSpecies {
   co2: boolean;
   ph: [number, number];
   temp: [number, number];
+  kh?: [number, number];
+  gh?: [number, number];
   substrate: string;
   position: 'Primo Piano' | 'Centro' | 'Sfondo' | 'Galleggiante' | 'Epifita';
   details: string;
+  difficulty?: 'Facile' | 'Media' | 'Avanzata';
+  growth?: 'Lenta' | 'Media' | 'Veloce' | 'Molto Lenta';
 }
 
 export const FISH_MASTER_DATA: FishSpecies[] = [
@@ -109,50 +113,102 @@ export const FISH_MASTER_DATA: FishSpecies[] = [
 export const PLANT_MASTER_DATA: PlantSpecies[] = [
   { 
     name: 'Anubias', light: [15, 25], co2: false, ph: [6.0, 8.5], temp: [22, 28], substrate: 'Inerte/Legni', 
-    position: 'Epifita', details: 'Pianta molto robusta a crescita lenta. Non va interrata nel substrato ma legata a legni o rocce.' 
+    position: 'Epifita', details: 'Pianta molto robusta a crescita lenta. Non va interrata nel substrato ma legata a legni o rocce.',
+    difficulty: 'Facile', growth: 'Lenta'
   },
   { 
     name: 'Java Fern', light: [10, 30], co2: false, ph: [6.0, 8.0], temp: [20, 28], substrate: 'Legni/Rocce', 
-    position: 'Epifita', details: 'Pianta epifita che cresce bene su legni e rocce. Molto resistente e adatta a acquari con poca luce.' 
+    position: 'Epifita', details: 'Pianta epifita che cresce bene su legni e rocce. Molto resistente e adatta a acquari con poca luce.',
+    difficulty: 'Facile', growth: 'Lenta'
   },
   { 
     name: 'Amazon Sword', light: [30, 50], co2: false, ph: [6.5, 7.5], temp: [22, 28], substrate: 'Fertile', 
-    position: 'Sfondo', details: 'Pianta a crescita rapida che richiede un fondo fertile. Diventa molto grande, ideale per lo sfondo.' 
+    position: 'Sfondo', details: 'Pianta a crescita rapida che richiede un fondo fertile. Diventa molto grande, ideale per lo sfondo.',
+    difficulty: 'Facile', growth: 'Veloce'
   },
   { 
     name: 'Vallisneria', light: [20, 40], co2: false, ph: [7.0, 8.5], temp: [18, 28], substrate: 'Sabbia', 
-    position: 'Sfondo', details: 'Pianta a nastro che si riproduce velocemente tramite stoloni. Ottima per creare una "foresta" sullo sfondo.' 
+    position: 'Sfondo', details: 'Pianta a nastro che si riproduce velocemente tramite stoloni. Ottima per creare una "foresta" sullo sfondo.',
+    difficulty: 'Facile', growth: 'Veloce'
   },
   { 
     name: 'Cryptocoryne', light: [20, 30], co2: false, ph: [6.5, 7.5], temp: [22, 28], substrate: 'Fertile', 
-    position: 'Centro', details: 'Pianta da centro acquario, richiede un fondo ricco di nutrienti. Può soffrire di "marciume delle cryptocoryne" se spostata spesso.' 
+    position: 'Centro', details: 'Pianta da centro acquario, richiede un fondo ricco di nutrienti. Può soffrire di "marciume delle cryptocoryne" se spostata spesso.',
+    difficulty: 'Facile', growth: 'Media'
   },
   { 
     name: 'Java Moss', light: [10, 40], co2: false, ph: [5.0, 8.0], temp: [15, 30], substrate: 'Qualsiasi', 
-    position: 'Epifita', details: 'Muschio versatile che può essere legato a qualsiasi superficie. Ottimo rifugio per avannotti e caridine.' 
+    position: 'Epifita', details: 'Muschio versatile che può essere legato a qualsiasi superficie. Ottimo rifugio per avannotti e caridine.',
+    difficulty: 'Facile', growth: 'Media'
   },
   { 
     name: 'Hornwort', light: [20, 50], co2: false, ph: [6.0, 8.5], temp: [10, 28], substrate: 'Nessuno', 
-    position: 'Galleggiante', details: 'Pianta galleggiante o da sfondo a crescita rapidissima. Ottima per assorbire nitrati in eccesso.' 
+    position: 'Galleggiante', details: 'Pianta galleggiante o da sfondo a crescita rapidissima. Ottima per assorbire nitrati in eccesso.',
+    difficulty: 'Facile', growth: 'Veloce'
   },
   { 
     name: 'Water Wisteria', light: [30, 60], co2: false, ph: [6.5, 7.5], temp: [22, 28], substrate: 'Fertile', 
-    position: 'Centro', details: 'Pianta versatile che può cambiare forma delle foglie in base alla luce. Cresce velocemente.' 
+    position: 'Centro', details: 'Pianta versatile che può cambiare forma delle foglie in base alla luce. Cresce velocemente.',
+    difficulty: 'Facile', growth: 'Veloce'
   },
   { 
     name: 'Bacopa Caroliniana', light: [40, 70], co2: false, ph: [6.0, 7.5], temp: [15, 26], substrate: 'Fertile', 
-    position: 'Centro', details: 'Pianta a stelo con foglie carnose. Se esposta a forte luce può assumere sfumature bronzo.' 
+    position: 'Centro', details: 'Pianta a stelo con foglie carnose. Se esposta a forte luce può assumere sfumature bronzo.',
+    difficulty: 'Facile', growth: 'Media'
   },
   { 
     name: 'Ludwigia Repens', light: [40, 80], co2: true, ph: [5.5, 7.5], temp: [20, 28], substrate: 'Fertile', 
-    position: 'Centro', details: 'Pianta a stelo che diventa rossa con luce intensa e CO2. Molto decorativa.' 
+    position: 'Centro', details: 'Pianta a stelo che diventa rossa con luce intensa e CO2. Molto decorativa.',
+    difficulty: 'Media', growth: 'Veloce'
   },
   { 
-    name: 'Monte Carlo', light: [50, 100], co2: true, ph: [6.0, 7.0], temp: [20, 26], substrate: 'Fertile', 
-    position: 'Primo Piano', details: 'Pianta da prato che richiede molta luce e CO2 per crescere compatta sul fondo.' 
+    name: "Hemianthus callitrichoides 'Cuba'", light: [50, 100], co2: true, ph: [6.0, 7.0], temp: [20, 28], kh: [3, 10], gh: [6, 12], substrate: 'Fertile', 
+    position: 'Primo Piano', details: 'La pianta da primo piano più piccola al mondo, crea un tappeto densissimo con bolle di ossigeno.',
+    difficulty: 'Avanzata', growth: 'Veloce'
   },
   { 
-    name: 'Dwarf Hairgrass', light: [50, 100], co2: true, ph: [6.0, 7.5], temp: [20, 28], substrate: 'Fertile', 
-    position: 'Primo Piano', details: 'Crea un effetto prato erboso. Richiede potature regolari e buona illuminazione.' 
+    name: "Micranthemum 'Monte Carlo'", light: [40, 80], co2: true, ph: [6.5, 7.5], temp: [18, 26], kh: [3, 8], gh: [5, 15], substrate: 'Fertile', 
+    position: 'Primo Piano', details: 'Foglie tonde e piccole, molto simile alla Cuba ma molto più facile da coltivare e adattabile.',
+    difficulty: 'Media', growth: 'Media'
+  },
+  { 
+    name: 'Eleocharis acicularis', light: [30, 60], co2: true, ph: [6.0, 7.5], temp: [10, 25], kh: [2, 10], gh: [4, 15], substrate: 'Fertile', 
+    position: 'Primo Piano', details: 'Erba aghiforme sottile, crea un effetto prato inglese molto naturale.',
+    difficulty: 'Media', growth: 'Media'
+  },
+  { 
+    name: 'Glossostigma elatinoides', light: [50, 100], co2: true, ph: [6.2, 7.2], temp: [22, 26], kh: [3, 8], gh: [6, 12], substrate: 'Fertile', 
+    position: 'Primo Piano', details: 'Una delle piante più basse, richiede luce forte per non crescere in altezza.',
+    difficulty: 'Avanzata', growth: 'Veloce'
+  },
+  { 
+    name: 'Lilaeopsis brasiliensis', light: [50, 100], co2: true, ph: [6.0, 8.0], temp: [15, 26], kh: [4, 12], gh: [5, 20], substrate: 'Fertile', 
+    position: 'Primo Piano', details: 'Pianta a stoloni che ricorda l\'erba comune, forma prati molto compatti nel tempo.',
+    difficulty: 'Media', growth: 'Lenta'
+  },
+  { 
+    name: 'Pogostemon helferi', light: [40, 80], co2: true, ph: [6.0, 7.5], temp: [20, 30], kh: [3, 10], gh: [6, 15], substrate: 'Fertile', 
+    position: 'Centro', details: 'Aspetto stellato unico con foglie arricciate, ideale per aquascaping tra rocce.',
+    difficulty: 'Media', growth: 'Media'
+  },
+  { 
+    name: 'Hydrocotyle verticillata', light: [25, 50], co2: false, ph: [6.0, 7.8], temp: [10, 26], kh: [3, 15], gh: [5, 20], substrate: 'Fertile', 
+    position: 'Primo Piano', details: 'Foglie a forma di ombrellino, cresce orizzontalmente con stoloni.',
+    difficulty: 'Facile', growth: 'Veloce'
+  },
+  { 
+    name: 'Eriocaulon sp. Polaris', light: [50, 100], co2: true, ph: [5.5, 6.8], temp: [22, 26], kh: [0, 4], gh: [3, 8], substrate: 'Fertile', 
+    position: 'Primo Piano', details: 'Pianta rara a rosetta rigida, richiede parametri dell\'acqua molto stabili.',
+    difficulty: 'Avanzata', growth: 'Lenta'
+  },
+  { 
+    name: 'Sagittaria subulata', light: [25, 50], co2: false, ph: [6.5, 8.0], temp: [18, 28], kh: [5, 15], gh: [8, 20], substrate: 'Fertile', 
+    position: 'Primo Piano', details: 'Estremamente facile, ideale per chi non usa CO2, forma un prato alto.',
+    difficulty: 'Facile', growth: 'Veloce'
+  },
+  { 
+    name: 'Cladophora (Marimo)', light: [10, 20], co2: false, ph: [6.8, 8.5], temp: [5, 24], kh: [5, 15], gh: [8, 25], substrate: 'Qualsiasi', 
+    position: 'Epifita', details: 'Alga a palla decorativa, può essere aperta per creare prati vellutati.',
+    difficulty: 'Facile', growth: 'Molto Lenta'
   },
 ];

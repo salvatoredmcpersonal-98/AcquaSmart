@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, Sparkles } from 'lucide-react';
 import { useLocale } from '../context/LocaleContext';
+import { motion, AnimatePresence } from 'motion/react';
+import { parseDimensions } from '../services/waterChemistryService';
 
 const InputField = ({ label, value, onChange, unit, autoFocus = false }) => (
     <div>
@@ -21,7 +23,7 @@ const InputField = ({ label, value, onChange, unit, autoFocus = false }) => (
     </div>
 );
 
-export default function LogTestModal({ parameter, testLogs, onClose, onLogTest, onDeleteLog, onResetHistory }) {
+export default function LogTestModal({ parameter, testLogs, onClose, onLogTest, onDeleteLog, onResetHistory, onMaintenanceAction = null, tank = null, accessories = [], validationResult = null }) {
     const { t } = useTranslation();
     const { locale, formatTemperature } = useLocale();
     const [value, setValue] = useState('');
@@ -31,6 +33,7 @@ export default function LogTestModal({ parameter, testLogs, onClose, onLogTest, 
         ph: { title: t('log_ph_title'), label: 'pH', unit: '', formatter: (val) => val?.toFixed(1) },
         nitrates: { title: t('log_nitrates_title'), label: t('log_test_nitrates'), unit: 'mg/L', formatter: (val) => val ? `${val} mg/L` : '' },
         kh: { title: t('log_kh_title'), label: 'KH', unit: '°dKH', formatter: (val) => val ? `${val} °dKH` : '' },
+        gh: { title: t('log_gh_title'), label: 'GH', unit: '°dGH', formatter: (val) => val ? `${val} °dGH` : '' },
     };
 
     const config = paramConfig[parameter];
@@ -41,8 +44,19 @@ export default function LogTestModal({ parameter, testLogs, onClose, onLogTest, 
         if (parameter === 'temp' && locale.temperature.unit === 'F') {
             processedValue = (processedValue - 32) * 5/9;
         }
+
         onLogTest({ [parameter]: processedValue });
+        
+        // Log the maintenance action
+        if (onMaintenanceAction && tank) {
+            onMaintenanceAction(tank.id, `Water Test: ${parameter}`, { 
+                value: processedValue,
+                unit: config.unit
+            });
+        }
+        
         setValue(''); // Clear input after submission
+        onClose(); // Close modal after submission
     };
     
     const handleReset = () => {
@@ -72,6 +86,7 @@ export default function LogTestModal({ parameter, testLogs, onClose, onLogTest, 
                         unit={config.unit}
                         autoFocus={true}
                     />
+
                     <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all duration-200 text-white font-bold py-4 rounded-2xl !mt-8 shadow-lg shadow-emerald-500/20">
                         {t('log_test_button')}
                     </button>

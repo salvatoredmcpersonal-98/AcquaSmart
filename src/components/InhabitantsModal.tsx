@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Plus, Trash2, Fish, Leaf, Search, DollarSign, Grid, Info, Box, Thermometer, Droplets, Waves, MapPin } from 'lucide-react';
+import { X, Plus, Trash2, Fish, Leaf, Search, DollarSign, Grid, Info, Box, Thermometer, Droplets, Waves, MapPin, Sun, Zap, TrendingUp, Gauge } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { HARDSCAPE_SUGGESTIONS } from '../constants/filters';
 import { FISH_MASTER_DATA, PLANT_MASTER_DATA } from '../constants/masterData';
@@ -38,8 +38,16 @@ const SUGGESTIONS = {
     { name: 'Water Wisteria', price: 5.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/plant_wisteria' },
     { name: 'Bacopa Caroliniana', price: 4.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/plant_bacopa' },
     { name: 'Ludwigia Repens', price: 5.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/plant_ludwigia' },
-    { name: 'Monte Carlo', price: 7.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/plant_monte_carlo' },
-    { name: 'Dwarf Hairgrass', price: 6.0, image: 'https://res.cloudinary.com/demo/image/upload/c_fill,w_300,h_200,g_auto/plant_hairgrass' }
+    { name: "Hemianthus callitrichoides 'Cuba'", price: 8.0, image: 'https://ibrio.it/4818-home_default/hemianthus-callitrichoides-cuba.jpg' },
+    { name: "Micranthemum 'Monte Carlo'", price: 7.0, image: 'https://ibrio.it/4945-home_default/micranthemum-tappetino-di-prato-per-acquario.jpg' },
+    { name: 'Eleocharis acicularis', price: 6.0, image: 'https://ibrio.it/5017-home_default/eleocharis-acicularis-in-pad.jpg' },
+    { name: 'Glossostigma elatinoides', price: 7.0, image: 'https://ibrio.it/4881-home_default/glossostigma-elantinoides-in-vitro.jpg' },
+    { name: 'Lilaeopsis brasiliensis', price: 6.0, image: 'https://ibrio.it/4887-home_default/lilaeopsis-brasiliensis-in-vitro.jpg' },
+    { name: 'Pogostemon helferi', price: 8.0, image: 'https://ibrio.it/4873-home_default/pogostemon-helferi-in-vitro.jpg' },
+    { name: 'Hydrocotyle verticillata', price: 5.0, image: 'https://ibrio.it/9858-home_default/hydrocotyle-verticillata-pianta-acquatica-tappezzante-per-acquario.jpg' },
+    { name: 'Eriocaulon sp. Polaris', price: 12.0, image: 'https://ibrio.it/10186-home_default/eriocaulon-sp-polaris-in-vitro' },
+    { name: 'Sagittaria subulata', price: 4.0, image: 'https://ibrio.it/4818-home_default/sagittaria-subulata.jpg' },
+    { name: 'Cladophora (Marimo)', price: 5.0, image: 'https://ibrio.it/4946-home_default/marimo-moss-taglia-s.jpg' }
   ],
   hardscape: [
     ...HARDSCAPE_SUGGESTIONS.substrates.map(s => ({ name: s.model, price: s.minPrice, image: 'https://picsum.photos/seed/substrate/300/200' })),
@@ -477,7 +485,16 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose, lates
                     </div>
                     <span className="text-white font-bold">{selectedInfoItem.masterData.ph[0]} - {selectedInfoItem.masterData.ph[1]}</span>
                   </div>
-                  {activeTab === 'fish' && (
+                  {selectedInfoItem.masterData.kh && (
+                    <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
+                      <div className="flex items-center gap-2 text-white/40 mb-1">
+                        <Droplets size={14} />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">{t('info_kh')}</span>
+                      </div>
+                      <span className="text-white font-bold">{selectedInfoItem.masterData.kh[0]} - {selectedInfoItem.masterData.kh[1]}</span>
+                    </div>
+                  )}
+                  {selectedInfoItem.masterData.gh && (
                     <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
                       <div className="flex items-center gap-2 text-white/40 mb-1">
                         <Waves size={14} />
@@ -493,6 +510,38 @@ export default function InhabitantsModal({ inhabitants, onUpdate, onClose, lates
                     </div>
                     <span className="text-white font-bold">{activeTab === 'fish' ? selectedInfoItem.masterData.zone : selectedInfoItem.masterData.position}</span>
                   </div>
+                  {activeTab === 'plants' && (
+                    <>
+                      <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
+                        <div className="flex items-center gap-2 text-white/40 mb-1">
+                          <Gauge size={14} />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">{t('info_difficulty')}</span>
+                        </div>
+                        <span className="text-white font-bold">{selectedInfoItem.masterData.difficulty || 'Media'}</span>
+                      </div>
+                      <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
+                        <div className="flex items-center gap-2 text-white/40 mb-1">
+                          <TrendingUp size={14} />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">{t('info_growth')}</span>
+                        </div>
+                        <span className="text-white font-bold">{selectedInfoItem.masterData.growth || 'Media'}</span>
+                      </div>
+                      <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
+                        <div className="flex items-center gap-2 text-white/40 mb-1">
+                          <Sun size={14} />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">{t('info_light')}</span>
+                        </div>
+                        <span className="text-white font-bold">{selectedInfoItem.masterData.light[0]} - {selectedInfoItem.masterData.light[1]} lm/L</span>
+                      </div>
+                      <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
+                        <div className="flex items-center gap-2 text-white/40 mb-1">
+                          <Zap size={14} />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">{t('info_co2')}</span>
+                        </div>
+                        <span className="text-white font-bold">{selectedInfoItem.masterData.co2 ? 'Necessaria' : 'Non necessaria'}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="space-y-2">

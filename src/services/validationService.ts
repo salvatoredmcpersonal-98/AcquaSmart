@@ -12,12 +12,26 @@ export interface ValidationResult {
     lumenPerLiter: number; 
     co2: number; 
     totalWeight: number;
-    currentParams: { ph: number; kh: number; temp: number; gh?: number; nitrates?: number };
+    plantDensity: number;
+    currentParams: { ph?: number; kh?: number; temp?: number; gh?: number; nitrates?: number };
+    photoperiod: {
+      recommendedHours: number;
+      actualHours: number;
+      isOptimal: boolean;
+      advice: string;
+      techAdvice?: string;
+      warning?: string;
+    };
+    energyLoad: {
+      value: number;
+      status: 'low' | 'normal' | 'medium' | 'high';
+      message: string;
+    };
   };
   status: 'Ottimale' | 'Warning' | 'Errore Critico';
   ecosystemType: 'TROPICALE' | 'ACQUA FREDDA';
   checks: {
-    chemical: { status: 'ok' | 'error'; message: string; commonRange?: any };
+    chemical: { status: 'ok' | 'error'; message: string; commonRange?: any; commonGhRange?: [number, number]; targetGh?: number };
     lighting: { status: 'ok' | 'error'; message: string };
     algae: { status: 'ok' | 'warning'; message: string };
     ethological: { status: 'ok' | 'error' | 'warning'; message: string };
@@ -27,6 +41,8 @@ export interface ValidationResult {
   explanation: string[];
   suggestedChart?: 'Intersezione Range' | 'Ciclo Azoto' | 'Triangolo Alghe';
   biotypeAnalysis: string;
+  deducedStyle?: string;
+  styleMessage?: string;
   lifeSavingAdvice: string;
   zoneAnalysis: {
     superficie: { count: number; saturation: number; status: 'Ottimo' | 'Giallo' | 'Rosso' };
@@ -46,11 +62,250 @@ export interface HealthScoreResult {
   quickAdvice?: string;
 }
 
+export interface TroubleshootingResult {
+  status: 'Vasca in Salute' | 'Squilibrio Rilevato' | 'Emergenza';
+  problems: {
+    param: string;
+    value: number;
+    target: string;
+    diagnosis: string;
+    solution: string;
+    action: string;
+    proTip: string;
+    priority: number; // 1: Letale, 2: Instabilità, 3: Ottimizzazione
+  }[];
+}
+
+export const AQUARIUM_TARGETS: Record<string, any> = {
+  'Comunità': {
+    temp: [24, 26],
+    ph: [6.5, 7.5],
+    kh: [4, 8],
+    gh: [8, 15],
+    nitrates: [0, 25],
+    po4: [0, 0.5],
+    co2: [10, 20],
+    fe: [0.05, 0.05]
+  },
+  'Aquascaping': {
+    temp: [22, 25],
+    ph: [6.2, 6.8],
+    kh: [2, 4],
+    gh: [4, 8],
+    nitrates: [5, 15],
+    po4: [0.5, 1.0],
+    co2: [20, 35],
+    fe: [0.1, 0.2]
+  },
+  'Acqua Fredda': {
+    temp: [18, 22],
+    ph: [7.2, 8.0],
+    kh: [6, 12],
+    gh: [12, 20],
+    nitrates: [0, 40],
+    po4: [0, 1.0],
+    co2: [0, 10],
+    fe: null
+  }
+};
+
+export function getTroubleshootingAnalysis(
+  values: Record<string, number | undefined>,
+  tankType: string = 'Comunità',
+  netVolume: number = 0,
+  inhabitants?: { fish: any[]; plants: any[] },
+  plantDensity: number = 0,
+  lumenPerLiter: number = 0,
+  hasCO2: boolean = false
+): TroubleshootingResult {
+  const targets = AQUARIUM_TARGETS[tankType as keyof typeof AQUARIUM_TARGETS] || AQUARIUM_TARGETS['Comunità'];
+  const problems: TroubleshootingResult['problems'] = [];
+
+  const checkParam = (param: string, value: number | undefined, targetRange: [number, number] | null, priority: number, label: string) => {
+    if (typeof value !== 'number' || isNaN(value) || !targetRange) return;
+
+    const [min, max] = targetRange;
+    if (value < min || value > max) {
+      let diagnosis = "";
+      let solution = "";
+      let action = "";
+      let proTip = "";
+
+      if (value > max) {
+        diagnosis = `${label} troppo alto (${value} > ${max})`;
+        if (['nitrates', 'po4', 'gh'].includes(param)) {
+          const percentChange = Math.round((1 - (max / value)) * 100);
+          const liters = Math.round((percentChange / 100) * netVolume);
+          solution = `Effettua un cambio del ${percentChange}% (${liters} Litri)`;
+          action = `Usa acqua d'osmosi o acqua con valori inferiori per abbassare ${label}.`;
+          proTip = param === 'nitrates' ? "Controlla il filtro e riduci la somministrazione di cibo." : "Verifica il dosaggio dei fertilizzanti.";
+        } else if (param === 'temp') {
+          solution = "Abbassa la temperatura gradualmente.";
+          action = "Usa ventole di raffreddamento o riduci il riscaldamento.";
+          proTip = "L'alta temperatura riduce l'ossigeno disciolto.";
+        } else if (param === 'ph') {
+          solution = "Riduci il pH.";
+          action = "Aumenta l'erogazione di CO2 o usa acidificanti naturali (torba).";
+          proTip = "Un pH instabile causa forte stress osmotico.";
+        }
+      } else if (value < min) {
+        diagnosis = `${label} troppo basso (${value} < ${min})`;
+        if (param === 'gh' || param === 'kh') {
+          solution = `Aumenta ${label} per raggiungere il target di ${min}.`;
+          action = "Usa sali minerali specifici per reintegrare la durezza.";
+          proTip = "Un KH troppo basso può causare sbalzi di pH pericolosi.";
+        } else if (param === 'temp') {
+          solution = "Aumenta la temperatura.";
+          action = "Verifica il corretto funzionamento del riscaldatore.";
+          proTip = "Il metabolismo dei pesci rallenta drasticamente sotto il range ideale.";
+        } else if (param === 'ph') {
+          solution = "Aumenta il pH.";
+          action = "Aumenta il KH o riduci l'erogazione di CO2.";
+          proTip = "Verifica se ci sono troppi acidificanti in vasca.";
+        }
+      }
+
+      if (diagnosis) {
+        problems.push({ param: label, value, target: `${min}-${max}`, diagnosis, solution, action, proTip, priority });
+      }
+    }
+  };
+
+  // Level 1: Letale (NH3, NO2, Cu)
+  if (typeof values.nh4 === 'number' && !isNaN(values.nh4) && values.nh4 > 0) {
+    problems.push({
+      param: 'NH4/NH3',
+      value: values.nh4,
+      target: '0',
+      diagnosis: "Presenza di Ammonio/Ammoniaca rilevata!",
+      solution: `Cambio d'acqua immediato del 50% (${Math.round(netVolume * 0.5)}L)`,
+      action: "Effettua un cambio d'acqua e aumenta l'aerazione.",
+      proTip: "L'ammoniaca è letale. Verifica il corretto funzionamento del filtro biologico.",
+      priority: 1
+    });
+  }
+  if (typeof values.no2 === 'number' && !isNaN(values.no2) && values.no2 > 0.1) {
+    problems.push({
+      param: 'NO2',
+      value: values.no2,
+      target: '< 0.1',
+      diagnosis: "Nitriti pericolosi rilevati!",
+      solution: `Cambio d'acqua immediato del 50% (${Math.round(netVolume * 0.5)}L)`,
+      action: "Sospendi il cibo e aggiungi attivatori batterici.",
+      proTip: "I nitriti impediscono il trasporto di ossigeno nel sangue dei pesci.",
+      priority: 1
+    });
+  }
+  if (typeof values.cu === 'number' && !isNaN(values.cu) && values.cu > 0) {
+    problems.push({
+      param: 'Cu',
+      value: values.cu,
+      target: '0',
+      diagnosis: "Rame rilevato in vasca!",
+      solution: "Usa carbone attivo o biocondizionatori specifici.",
+      action: "Rimuovi la fonte di rame (spesso farmaci o tubature).",
+      proTip: "Il rame è letale per invertebrati e batteri del filtro.",
+      priority: 1
+    });
+  }
+
+  // Level 2: Instabilità (pH, KH, Temp)
+  checkParam('temp', values.temp as number, targets.temp, 2, 'Temperatura');
+  checkParam('ph', values.ph as number, targets.ph, 2, 'pH');
+  checkParam('kh', values.kh as number, targets.kh, 2, 'KH');
+
+  // Level 3: Ottimizzazione (NO3, PO4, GH, Fe)
+  checkParam('nitrates', values.nitrates as number, targets.nitrates, 3, 'Nitrati');
+  checkParam('po4', values.po4 as number, targets.po4, 3, 'Fosfati');
+  checkParam('gh', values.gh as number, targets.gh, 3, 'GH');
+  checkParam('fe', values.fe as number, targets.fe, 3, 'Ferro');
+
+  // Redfield Ratio Analysis
+  if (typeof values.nitrates === 'number' && !isNaN(values.nitrates) && typeof values.po4 === 'number' && !isNaN(values.po4) && values.po4 > 0) {
+    const ratio = values.nitrates / values.po4;
+    if (ratio < 5) {
+      problems.push({
+        param: 'Rapporto N:P',
+        value: Number(ratio.toFixed(1)),
+        target: '10-20',
+        diagnosis: "Rapporto Redfield troppo basso (Rischio Cianobatteri).",
+        solution: "Aumenta i Nitrati o riduci i Fosfati.",
+        action: "Modifica il piano di fertilizzazione.",
+        proTip: "I cianobatteri prosperano quando l'azoto è carente rispetto al fosforo.",
+        priority: 3
+      });
+    } else if (ratio > 20) {
+      problems.push({
+        param: 'Rapporto N:P',
+        value: Number(ratio.toFixed(1)),
+        target: '10-20',
+        diagnosis: "Rapporto Redfield troppo alto (Rischio Alghe Verdi GSA).",
+        solution: "Aumenta i Fosfati o riduci i Nitrati.",
+        action: "Modifica il piano di fertilizzazione.",
+        proTip: "Le alghe a puntini verdi spesso indicano una carenza di fosfati.",
+        priority: 3
+      });
+    }
+  }
+
+  // Algae Risk Analysis (New Logic)
+  if (inhabitants) {
+    const hasFastPlants = inhabitants.plants.some(p => {
+      const master = PLANT_MASTER_DATA.find(m => m.name === p.name);
+      return master && master.growth === 'Veloce';
+    });
+
+    // 1. High Light without CO2 or Fast Plants
+    if (lumenPerLiter > 30 && !hasCO2 && !hasFastPlants) {
+      problems.push({
+        param: 'Equilibrio Luce/CO2',
+        value: lumenPerLiter,
+        target: '< 30 lm/L',
+        diagnosis: "WARNING: Rischio Alghe! Luce intensa senza CO2 o piante rapide.",
+        solution: "Installa impianto CO2 o riduci l'intensità luminosa.",
+        action: "Inserisci piante a crescita rapida per competere con le alghe.",
+        proTip: "La luce forte accelera il metabolismo, se manca CO2 le alghe prendono il sopravvento.",
+        priority: 2
+      });
+    }
+
+    // 2. High Organic Load vs Plant Density
+    const totalFishLength = inhabitants.fish.reduce((acc, f) => {
+      const species = FISH_MASTER_DATA.find(m => f.name.includes(m.name));
+      return acc + (species ? species.maxSize * f.quantity : 0);
+    }, 0);
+    
+    const organicLoad = totalFishLength / (netVolume / 2);
+    if (organicLoad > 1.2 && plantDensity < 40) {
+      problems.push({
+        param: 'Carico Organico',
+        value: Number(organicLoad.toFixed(1)),
+        target: '< 1.0',
+        diagnosis: "WARNING: Rischio Alghe! Carico organico troppo alto per la massa vegetale.",
+        solution: "Aumenta la densità vegetale o riduci il numero di pesci.",
+        action: "Effettua cambi d'acqua più frequenti e inserisci più piante.",
+        proTip: "Le piante assorbono i rifiuti dei pesci; se sono poche, i nutrienti alimentano le alghe.",
+        priority: 2
+      });
+    }
+  }
+
+  // Sort by priority
+  problems.sort((a, b) => a.priority - b.priority);
+
+  let status: TroubleshootingResult['status'] = 'Vasca in Salute';
+  if (problems.some(p => p.priority === 1)) status = 'Emergenza';
+  else if (problems.length > 0) status = 'Squilibrio Rilevato';
+
+  return { status, problems };
+}
+
 export function calculateHealthScore(
   testLogs: any[],
   reminders: any[],
   validation: ValidationResult,
-  inhabitants: { fish: any[]; plants: any[]; waterParams: any }
+  inhabitants: { fish: any[]; plants: any[]; waterParams: any },
+  maintenanceLogs: any[] = []
 ): HealthScoreResult {
   if (testLogs.length === 0) {
     return {
@@ -113,6 +368,17 @@ export function calculateHealthScore(
     riskFactors.push("Dati obsoleti (>14gg) (-10 pt)");
   }
 
+  // 7. BONUS STABILITÀ PARAMETRI (+5%)
+  const recentTopup = maintenanceLogs.some(log => 
+    log.task === 'Water Top-up' && 
+    (now.getTime() - new Date(log.timestamp).getTime()) < 7 * 24 * 60 * 60 * 1000
+  );
+
+  if (recentTopup) {
+    score = Math.min(100, score + 5);
+    riskFactors.push("Bonus Stabilità: Rabbocco effettuato (+5 pt)");
+  }
+
   // 6. EMPTY TANK CHECK (Professional Feature)
   const totalFishLength = inhabitants.fish.reduce((acc, f) => {
     const species = FISH_MASTER_DATA.find(m => f.name.includes(m.name));
@@ -162,10 +428,20 @@ export function calculateHealthScore(
 }
 
 export function validateSetup(
-  tank: { length?: number; width?: number; height?: number; volume?: number },
+  tank: { length?: number; width?: number; height?: number; volume?: number; environment?: string; lightingHours?: number },
   accessories: any[],
   inhabitants: { fish: any[]; plants: any[]; hardscape: any[] },
-  waterParams: { ph: number; kh: number; temp: number; gh?: number; nitrates?: number }
+  waterParams: { 
+    ph?: number; 
+    kh?: number; 
+    temp?: number; 
+    gh?: number; 
+    nitrates?: number;
+    po4?: number;
+    nh4?: number;
+    no2?: number;
+    cu?: number;
+  }
 ): ValidationResult {
   // 1. DATA BINDING & HIERARCHY
   let L = tank.length || 0;
@@ -191,26 +467,134 @@ export function validateSetup(
   const netVolume = grossVolume > 0 ? grossVolume * 0.85 : 0;
   const totalWeight = grossVolume > 0 ? grossVolume * 1.25 : 0;
 
-  // Lumen/Litro: Search for 'lumen' in selected lamp
-  const totalLumens = accessories
+  // DYNAMIC PLANT DENSITY CALCULATION
+  const plantCount = inhabitants.plants.reduce((acc, p) => acc + (p.quantity || 1), 0);
+  const plantDensity = Math.min(100, Math.round((plantCount * 10) / (netVolume / 100 || 1)));
+
+  // 1.1 PHOTOPERIOD CALCULATION
+  const E_target = 300; // Lumen-ora per litro target
+  let totalLumens = accessories
     .filter(a => a.type === 'lamp')
     .reduce((acc, curr) => {
       if (curr.lumen) return acc + curr.lumen;
-      // Fallback: extract watt from name and estimate 80 lm/W
       const wattMatch = curr.name.match(/(\d+)W/);
       const watts = wattMatch ? parseInt(wattMatch[1]) : (curr.watt || 0);
       return acc + (watts * 80);
     }, 0);
 
+  // If no lamp is found, assume a default low-power lamp for calculation if volume exists
+  if (totalLumens === 0 && netVolume > 0) {
+    totalLumens = netVolume * 20; // Default 20 lm/L
+  }
+
+  let hCalc = totalLumens > 0 ? (E_target * netVolume) / totalLumens : 8;
+  
+  // Environmental Correction
+  const lampWithEnv = accessories.find(a => a.type === 'lamp' && a.environment);
+  const env = lampWithEnv?.environment || tank.environment || 'dark';
+  let hTarget = hCalc;
+  let photoperiodAdvice = '';
+  let photoperiodWarning = undefined;
+
+  if (env === 'bright') {
+    hTarget -= 1.5;
+    photoperiodAdvice = 'validation_photoperiod_advice_bright';
+  } else if (env === 'sunlight') {
+    hTarget -= 3;
+    photoperiodAdvice = 'validation_photoperiod_advice_sunlight';
+    photoperiodWarning = 'Rischio Alghe Elevato';
+  }
+
+  // Clamp photoperiod between 4 and 12 hours
+  hTarget = Math.max(4, Math.min(12, hTarget));
+
+  // Tech Advice
+  let techAdvice = undefined;
+  if (netVolume > 0 && totalLumens / netVolume > 40) {
+    techAdvice = 'validation_photoperiod_tech_advice';
+  }
+
+  const lampWithHours = accessories.find(a => a.type === 'lamp' && a.lightingHours);
+  const actualLightingHours = lampWithHours?.lightingHours || tank.lightingHours || 8;
+  const isPhotoperiodOptimal = Math.abs(hTarget - actualLightingHours) <= 0.2;
+
+  const photoperiodData = {
+    recommendedHours: parseFloat(hTarget.toFixed(1)),
+    actualHours: actualLightingHours,
+    isOptimal: isPhotoperiodOptimal,
+    advice: isPhotoperiodOptimal ? 'validation_photoperiod_optimal' : photoperiodAdvice,
+    techAdvice,
+    warning: photoperiodWarning
+  };
+
+  // Lumen/Litro: Use totalLumens calculated above
   const lumenPerLiter = netVolume > 0 ? totalLumens / netVolume : 0;
-  const co2 = (waterParams.kh > 0 && waterParams.ph > 0) 
+  
+  // DYNAMIC STYLE DEDUCTION
+  let deducedStyle = 'Comunità';
+  const currentTemp = waterParams.temp ?? 25;
+
+  if (currentTemp < 22) {
+    deducedStyle = 'Acqua Fredda';
+  } else {
+    // Biological Analysis (Plants/Light)
+    if (plantDensity > 60 && lumenPerLiter > 35) {
+      deducedStyle = 'Aquascaping';
+    } else {
+      deducedStyle = 'Comunità';
+    }
+  }
+
+  const styleMessage = `In base ai dati inseriti (Luce: ${lumenPerLiter.toFixed(1)} lm/L, Piante: ${plantDensity}%), il tuo setup è configurato come ${deducedStyle}.`;
+
+  // ENERGY LOAD CALCULATION (LO/L)
+  let energyLoadValue = (totalLumens * actualLightingHours) / (netVolume || 1);
+  
+  // Ambient Light Bonus
+  if (env === 'bright') {
+    energyLoadValue += 50;
+  }
+
+  let energyLoadStatus: 'low' | 'normal' | 'medium' | 'high' = 'medium';
+  let energyLoadMessage = '';
+
+  if (energyLoadValue > 450) {
+    energyLoadStatus = 'high';
+    energyLoadMessage = 'validation_energy_load_high_warning';
+  } else if (energyLoadValue >= 250) {
+    energyLoadStatus = 'medium';
+    energyLoadMessage = 'validation_energy_load_medium_info';
+  } else if (energyLoadValue < 150) {
+    energyLoadStatus = 'low';
+    energyLoadMessage = 'validation_energy_load_low_suggestion';
+  } else {
+    energyLoadStatus = 'normal';
+    energyLoadMessage = '';
+  }
+
+  const co2 = (typeof waterParams.kh === 'number' && typeof waterParams.ph === 'number' && waterParams.kh > 0 && waterParams.ph > 0) 
     ? 3 * waterParams.kh * Math.pow(10, (7 - waterParams.ph)) 
     : 0;
 
   const result: ValidationResult = {
-    technicalData: { netVolume, lumenPerLiter, co2, totalWeight, currentParams: waterParams },
+    technicalData: { 
+      netVolume, 
+      lumenPerLiter, 
+      co2, 
+      totalWeight, 
+      plantDensity,
+      currentParams: waterParams, 
+      photoperiod: photoperiodData,
+      energyLoad: {
+        value: energyLoadValue,
+        status: energyLoadStatus,
+        message: energyLoadMessage
+      }
+    },
     status: 'Ottimale',
-    ecosystemType: waterParams.temp >= 20 ? 'TROPICALE' : 'ACQUA FREDDA',
+    ecosystemType: (typeof waterParams.temp === 'number' && waterParams.temp >= 20) ? 'TROPICALE' : 'ACQUA FREDDA',
+    deducedStyle,
+    styleMessage,
     checks: {
       chemical: { status: 'ok', message: 'Parametri chimici compatibili.' },
       lighting: { status: 'ok', message: 'Illuminazione adeguata.' },
@@ -231,6 +615,31 @@ export function validateSetup(
     },
     purchaseSuggestions: []
   };
+
+  if (photoperiodWarning) {
+    result.explanation.push(`⚠️ ${photoperiodWarning}`);
+    if (result.status === 'Ottimale') result.status = 'Warning';
+  }
+
+  if (energyLoadValue > 450) {
+    result.explanation.push(`🛑 ERRORE: Energia luminosa critica (${energyLoadValue.toFixed(0)} LO/L).`);
+    result.explanation.push(`👉 SOLUZIONE: Riduci le ore di luce a ${hTarget.toFixed(1)}h o diminuisci la potenza della lampada.`);
+    result.explanation.push(`💡 INFO: Senza CO2 e fertilizzazione spinta, le alghe prenderanno il sopravvento in pochi giorni.`);
+    result.status = 'Errore Critico';
+    result.checks.algae.status = 'warning';
+    result.checks.algae.message = 'Carico energetico eccessivo.';
+  } else if (energyLoadValue >= 250) {
+    if (!isPhotoperiodOptimal) {
+      result.explanation.push(`⚠️ ATTENZIONE: Setup ad alta energia (${energyLoadValue.toFixed(0)} LO/L).`);
+      result.explanation.push(`👉 CONSIGLIO: Imposta il fotoperiodo a ${hTarget.toFixed(1)}h per bilanciare la crescita delle piante.`);
+    } else {
+      result.explanation.push(`✨ OTTIMO: Setup ad alta energia bilanciato (${energyLoadValue.toFixed(0)} LO/L).`);
+    }
+    if (result.status === 'Ottimale') result.status = 'Warning';
+  } else if (energyLoadValue < 150) {
+    result.explanation.push(`ℹ️ INFO: Energia bassa (${energyLoadValue.toFixed(0)} LO/L).`);
+    result.explanation.push(`👉 SUGGERIMENTO: Aumenta le ore di luce a ${hTarget.toFixed(1)}h per favorire la fotosintesi delle piante.`);
+  }
 
   // 0. ZONE ANALYSIS
   const fishWithData = inhabitants.fish.map(f => ({
@@ -297,6 +706,7 @@ export function validateSetup(
   if (territorialConflict) {
     result.status = 'Errore Critico';
     result.explanation.push("🛑 ERRORE CRITICO: Conflitto Territoriale Imminente tra specie aggressive nella stessa zona.");
+    result.explanation.push("👉 SOLUZIONE: Aumenta i nascondigli (grotte, legni) o separa le specie in acquari differenti.");
   }
 
   // 1. CHEMICAL & THERMAL CHECK
@@ -310,63 +720,78 @@ export function validateSetup(
   // BIOTYPE ANALYSIS
   if (result.ecosystemType === 'ACQUA FREDDA') {
     result.biotypeAnalysis = "Stai creando un acquario d'Acqua Fredda (Temperato). Ideale per Carassi e specie fluviali europee.";
-  } else {
+  } else if (typeof waterParams.temp === 'number' && !isNaN(waterParams.temp)) {
     const hasAmazonian = selectedFish.some(f => f.species!.note?.toLowerCase().includes('amazzonico') || f.species!.group?.includes('Ciclide-Medio'));
     const hasMalawi = selectedFish.some(f => f.species!.group === 'Aggressivo' && f.name.includes('Malawi'));
     if (hasMalawi) result.biotypeAnalysis = "Stai progettando un acquario Biotopo Lago Malawi. Attenzione all'aggressività e all'assenza di piante tenere.";
     else if (hasAmazonian) result.biotypeAnalysis = "Stai creando un acquario Tropicale Amazzonico. Acque tenere, pH acido e molta vegetazione.";
     else result.biotypeAnalysis = "Stai creando un acquario Tropicale di Comunità. Equilibrio tra specie diverse e parametri neutri.";
+  } else {
+    result.biotypeAnalysis = "Inserisci la temperatura per determinare il tipo di ecosistema.";
   }
 
   // Filtro Termico Rigido
-  selectedFish.forEach(f => {
-    const s = f.species!;
-    if (result.ecosystemType === 'TROPICALE' && s.temp[0] < 18 && s.temp[1] < 22) {
-      result.checks.chemical.status = 'error';
-      result.status = 'Errore Critico';
-      result.explanation.push(`🛑 ERRORE TERMICO CRITICO: ${s.name} è un pesce d'acqua fredda. Non può sopravvivere in un ecosistema tropicale.`);
-    } else if (result.ecosystemType === 'ACQUA FREDDA' && s.temp[0] >= 22) {
-      result.checks.chemical.status = 'error';
-      result.status = 'Errore Critico';
-      result.explanation.push(`🛑 ERRORE TERMICO CRITICO: ${s.name} è un pesce tropicale. Morirà di shock termico in acqua fredda.`);
-    }
-  });
+  if (typeof waterParams.temp === 'number' && !isNaN(waterParams.temp)) {
+    selectedFish.forEach(f => {
+      const s = f.species!;
+      if (result.ecosystemType === 'TROPICALE' && s.temp[0] < 18 && s.temp[1] < 22) {
+        result.checks.chemical.status = 'error';
+        result.status = 'Errore Critico';
+        result.explanation.push(`🛑 ERRORE TERMICO CRITICO: ${s.name} è un pesce d'acqua fredda.`);
+        result.explanation.push(`👉 SOLUZIONE: Non inserire questa specie in un acquario tropicale.`);
+      } else if (result.ecosystemType === 'ACQUA FREDDA' && s.temp[0] >= 22) {
+        result.checks.chemical.status = 'error';
+        result.status = 'Errore Critico';
+        result.explanation.push(`🛑 ERRORE TERMICO CRITICO: ${s.name} è un pesce tropicale.`);
+        result.explanation.push(`👉 SOLUZIONE: Non inserire questa specie in un acquario d'acqua fredda.`);
+      }
+    });
+  }
 
   // Shock Osmotico (KH/pH vs Dashboard)
   selectedFish.forEach(f => {
     const s = f.species!;
-    if (waterParams.ph < s.ph[0] || waterParams.ph > s.ph[1]) {
+    if (typeof waterParams.ph === 'number' && !isNaN(waterParams.ph) && (waterParams.ph < s.ph[0] || waterParams.ph > s.ph[1])) {
       result.checks.chemical.status = 'error';
       result.status = 'Errore Critico';
-      result.explanation.push(`🛑 PERICOLO SHOCK OSMOTICO: Il pH attuale (${waterParams.ph}) è fuori dal range vitale di ${s.name} (${s.ph[0]}-${s.ph[1]}).`);
+      result.explanation.push(`🛑 PERICOLO SHOCK OSMOTICO: Il pH attuale (${waterParams.ph}) è fuori dal range di ${s.name} (${s.ph[0]}-${s.ph[1]}).`);
+      result.explanation.push(`👉 SOLUZIONE: Regola il pH usando CO2 o acidificanti/alcalinizzanti naturali.`);
     }
-    if (waterParams.gh && (waterParams.gh < s.gh[0] || waterParams.gh > s.gh[1])) {
+    if (typeof waterParams.gh === 'number' && !isNaN(waterParams.gh) && (waterParams.gh < s.gh[0] || waterParams.gh > s.gh[1])) {
       result.checks.chemical.status = 'error';
       result.status = 'Errore Critico';
-      result.explanation.push(`🛑 PERICOLO SHOCK OSMOTICO: La durezza attuale (GH ${waterParams.gh}) è fuori dal range vitale di ${s.name} (${s.gh[0]}-${s.gh[1]}).`);
+      result.explanation.push(`🛑 PERICOLO SHOCK OSMOTICO: La durezza attuale (GH ${waterParams.gh}) è fuori dal range di ${s.name} (${s.gh[0]}-${s.gh[1]}).`);
+      result.explanation.push(`👉 SOLUZIONE: Effettua un cambio d'acqua con acqua d'osmosi (per abbassare) o sali (per alzare).`);
     }
   });
 
   // Ipossia (Mancanza Ossigeno)
-  if (waterParams.temp > 28) {
+  if (typeof waterParams.temp === 'number' && !isNaN(waterParams.temp) && waterParams.temp > 28) {
     result.explanation.push("⚠️ PERICOLO ASFISSIA: La temperatura alta (>28°C) riduce drasticamente l'ossigeno disciolto. Aumenta la movimentazione superficiale!");
   }
 
-  // Incompatibilità Incrociata (pH e Temp)
+  // Incompatibilità Incrociata (pH, Temp, GH)
   if (selectedFish.length > 0) {
     let commonPh: [number, number] = [0, 14];
     let commonTemp: [number, number] = [0, 100];
+    let commonGh: [number, number] = [0, 100];
 
     selectedFish.forEach(f => {
       const s = f.species!;
       commonPh = [Math.max(commonPh[0], s.ph[0]), Math.min(commonPh[1], s.ph[1])];
       commonTemp = [Math.max(commonTemp[0], s.temp[0]), Math.min(commonTemp[1], s.temp[1])];
+      if (s.gh) {
+        commonGh = [Math.max(commonGh[0], s.gh[0]), Math.min(commonGh[1], s.gh[1])];
+      }
     });
 
-    if (commonPh[0] > commonPh[1] || commonTemp[0] > commonTemp[1]) {
+    result.checks.chemical.commonGhRange = commonGh;
+    result.checks.chemical.targetGh = Math.round((commonGh[0] + commonGh[1]) / 2);
+
+    if (commonPh[0] > commonPh[1] || commonTemp[0] > commonTemp[1] || commonGh[0] > commonGh[1]) {
       result.checks.chemical.status = 'error';
       result.status = 'Errore Critico';
-      result.explanation.push("🛑 ERRORE CRITICO: Incompatibilità incrociata. Non esiste un range di pH/Temp comune per tutte le specie selezionate.");
+      result.explanation.push("🛑 ERRORE CRITICO: Incompatibilità incrociata. Non esiste un range di pH/Temp/GH comune per tutte le specie selezionate.");
     }
   }
 
@@ -377,20 +802,37 @@ export function validateSetup(
     result.checks.lighting.message = 'Luce insufficiente per alcune piante.';
     if (result.status !== 'Errore Critico') result.status = 'Warning';
     result.explanation.push(`🛑 ERRORE: Luce Insufficiente per ${highLightPlants.map(p => p.name).join(', ')}.`);
+    result.explanation.push(`👉 SOLUZIONE: Aumenta la potenza della lampada o scegli piante meno esigenti.`);
   }
 
   // 3. ALGAE CHECK
   const nitrates = waterParams.nitrates || 0;
-  if (nitrates > 20 && lumenPerLiter > 40 && co2 < 15) {
+  const hasCO2System = accessories.some(a => a.type === 'co2' || a.name.toLowerCase().includes('co2'));
+  const hasFastGrowingPlants = inhabitants.plants.some(p => {
+    const species = PLANT_MASTER_DATA.find(m => p.name.includes(m.name));
+    return species?.growth === 'Veloce';
+  });
+
+  const fishLoadRatio = totalAdultCm / (netVolume / 2); // 1.0 is full load
+
+  if (lumenPerLiter > 30 && !hasFastGrowingPlants && !hasCO2System) {
+    result.checks.algae.status = 'warning';
+    result.checks.algae.message = 'Rischio Alghe: Luce alta (>30 lm/L) senza CO2 o piante a crescita rapida.';
+    if (result.status === 'Ottimale') result.status = 'Warning';
+    result.explanation.push('⚠️ WARNING: Rischio Alghe - Luce intensa senza supporto.');
+    result.explanation.push('👉 SOLUZIONE: Inserisci piante a crescita rapida o installa un impianto CO2.');
+  } else if (fishLoadRatio > 0.8 && plantDensity < 30) {
+    result.checks.algae.status = 'warning';
+    result.checks.algae.message = 'Rischio Alghe: Carico organico elevato rispetto alla massa vegetale.';
+    if (result.status === 'Ottimale') result.status = 'Warning';
+    result.explanation.push('⚠️ WARNING: Rischio Alghe - Troppi pesci per poche piante.');
+    result.explanation.push('👉 SOLUZIONE: Aumenta la massa vegetale o riduci il numero di abitanti.');
+  } else if (nitrates > 20 && lumenPerLiter > 40 && co2 < 15) {
     result.checks.algae.status = 'warning';
     result.checks.algae.message = 'Rischio esplosione alghe verdi filamentose.';
     if (result.status === 'Ottimale') result.status = 'Warning';
-    result.explanation.push('⚠️ WARNING: Rischio esplosione alghe verdi filamentose (NO3 > 20 e Luce alta senza CO2).');
-  } else if (lumenPerLiter > 40 && co2 < 15) {
-    result.checks.algae.status = 'warning';
-    result.checks.algae.message = 'Sbilanciamento Luce/CO2.';
-    if (result.status === 'Ottimale') result.status = 'Warning';
-    result.explanation.push('⚠️ WARNING: Sbilanciamento Luce/CO2 (Rischio alghe).');
+    result.explanation.push('⚠️ WARNING: Rischio esplosione alghe verdi filamentose.');
+    result.explanation.push('👉 SOLUZIONE: Riduci i nitrati con un cambio d\'acqua e aumenta la CO2.');
   }
 
   // 4. ETHOLOGICAL & SEX CHECK
@@ -399,7 +841,8 @@ export function validateSetup(
   if (totalBettaMales > 1) {
     result.checks.sexRatio.status = 'error';
     result.status = 'Errore Critico';
-    result.explanation.push("🛑 CONFLITTO MORTALE: Rilevato più di un Betta maschio. Si uccideranno a vicenda.");
+    result.explanation.push("🛑 CONFLITTO MORTALE: Rilevato più di un Betta maschio.");
+    result.explanation.push("👉 SOLUZIONE: Rimuovi immediatamente uno dei maschi per evitare combattimenti letali.");
   }
 
   const cichlidMales = selectedFish.filter(f => (f.species!.group?.includes('Ciclide') || f.species!.group === 'Aggressivo') && f.sex === 'M');
@@ -549,10 +992,15 @@ export function validateSetup(
 
   // 8. LIFE SAVING ADVICE
   const nitratesVal = waterParams.nitrates || 0;
-  if (nitratesVal > 50) result.lifeSavingAdvice = "Fai un cambio d'acqua del 50% IMMEDIATAMENTE per abbassare i Nitrati tossici.";
+  const nh4Val = waterParams.nh4 || 0;
+  const no2Val = waterParams.no2 || 0;
+
+  if (nh4Val > 0.5) result.lifeSavingAdvice = "🛑 EMERGENZA AMMONIACA: Fai un cambio d'acqua del 50% ORA e aggiungi attivatori batterici.";
+  else if (no2Val > 0.5) result.lifeSavingAdvice = "🛑 EMERGENZA NITRITI: Fai un cambio d'acqua del 50% ORA e sospendi l'alimentazione.";
+  else if (nitratesVal > 50) result.lifeSavingAdvice = "Fai un cambio d'acqua del 50% IMMEDIATAMENTE per abbassare i Nitrati tossici.";
   else if (nitratesVal > 20) result.lifeSavingAdvice = "Fai un cambio d'acqua del 20% per abbassare i Nitrati e prevenire le alghe.";
   else if (result.checks.sexRatio.status === 'error') result.lifeSavingAdvice = "Separa immediatamente i maschi aggressivi per evitare decessi.";
-  else if (waterParams.temp > 28) result.lifeSavingAdvice = "Aumenta l'ossigenazione dell'acqua puntando l'uscita del filtro verso l'alto.";
+  else if (waterParams.temp && waterParams.temp > 28) result.lifeSavingAdvice = "Aumenta l'ossigenazione dell'acqua puntando l'uscita del filtro verso l'alto.";
   else result.lifeSavingAdvice = "L'ecosistema è stabile. Continua con la manutenzione regolare e il monitoraggio dei parametri.";
 
   return result;

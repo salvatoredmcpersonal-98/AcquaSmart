@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Plus, Trash2, Lamp, Filter, Box, Ruler, DollarSign, ChevronDown } from 'lucide-react';
+import { X, Plus, Trash2, Lamp, Filter, Box, Ruler, DollarSign, ChevronDown, Sun, Edit2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FILTER_SUGGESTIONS, TANK_SUGGESTIONS, LAMP_SUGGESTIONS, Suggestion } from '../constants/filters';
 
@@ -9,9 +9,18 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState('');
   const [customName, setCustomName] = useState('');
-  const [newType, setNewType] = useState('lamp'); // lamp, filter, tank, other
-  const [newDimensions, setNewDimensions] = useState('');
+  const [newType, setNewType] = useState('tank'); // tank, lamp, filter, other
+  const [dimL, setDimL] = useState('');
+  const [dimW, setDimW] = useState('');
+  const [dimH, setDimH] = useState('');
   const [newPrice, setNewPrice] = useState(0);
+  const [newDescription, setNewDescription] = useState('');
+  const [newLumen, setNewLumen] = useState('');
+  const [newWatt, setNewWatt] = useState('');
+  const [newLightingHours, setNewLightingHours] = useState(8);
+  const [newEnvironment, setNewEnvironment] = useState('dark');
+  const [newIsOpen, setNewIsOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const suggestedFilters = useMemo(() => {
     if (tankVolume <= 60) return FILTER_SUGGESTIONS.nano;
@@ -36,14 +45,37 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
     })();
     
     // Always include premium/suspension systems as they are relevant for any size (especially scaping)
-    return [...volumeBased, ...LAMP_SUGGESTIONS.premium];
+    const combined = [...volumeBased, ...LAMP_SUGGESTIONS.premium];
+    
+    // Filter out duplicates by model name
+    return combined.filter((lamp, index, self) => 
+      index === self.findIndex((l) => l.model === lamp.model)
+    );
   }, [tankVolume]);
 
   const handleSelectSuggestion = (suggestion: Suggestion) => {
     setNewName(suggestion.model);
     setNewPrice(suggestion.minPrice);
     if (suggestion.dimensions) {
-      setNewDimensions(suggestion.dimensions);
+      const dims = suggestion.dimensions.match(/(\d+)\s*[x*]\s*(\d+)\s*[x*]\s*(\d+)/);
+      if (dims) {
+        setDimL(dims[1]);
+        setDimW(dims[2]);
+        setDimH(dims[3]);
+      } else {
+        // Fallback if regex fails but string exists
+        const parts = suggestion.dimensions.split(/[x*]/).map(p => p.trim().replace(/[^\d]/g, ''));
+        if (parts[0]) setDimL(parts[0]);
+        if (parts[1]) setDimW(parts[1]);
+        if (parts[2]) setDimH(parts[2]);
+      }
+    } else {
+      setDimL('');
+      setDimW('');
+      setDimH('');
+    }
+    if (suggestion.isOpen !== undefined) {
+      setNewIsOpen(suggestion.isOpen);
     }
   };
 
@@ -53,27 +85,88 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
     
     if (!finalName.trim()) return;
 
+    const dimensions = dimL && dimW && dimH ? `${dimL}x${dimW}x${dimH}` : '';
+
     const suggestion = (newType === 'filter' ? suggestedFilters : 
                         newType === 'tank' ? suggestedTanks : 
                         suggestedLamps).find(s => s.model === newName);
 
-    const newAccessory = {
-      id: Date.now(),
+    const accessoryData = {
       name: finalName,
       type: newType,
-      dimensions: newDimensions,
+      dimensions,
+      description: newDescription,
       price: Number(newPrice) || 0,
-      lumen: suggestion?.lumen,
-      watt: suggestion?.watt
+      isOpen: newType === 'tank' ? newIsOpen : undefined,
+      lumen: newName === 'custom' ? (Number(newLumen) || undefined) : suggestion?.lumen,
+      watt: newName === 'custom' ? (Number(newWatt) || undefined) : suggestion?.watt,
+      lightingHours: newType === 'lamp' ? newLightingHours : undefined,
+      environment: newType === 'lamp' ? newEnvironment : undefined
     };
 
-    onUpdate([newAccessory, ...accessories]);
+    if (editingId) {
+      onUpdate(accessories.map(a => a.id === editingId ? { ...a, ...accessoryData } : a));
+    } else {
+      onUpdate([{ id: Date.now() + Math.random(), ...accessoryData }, ...accessories]);
+    }
+
+    resetForm();
+  };
+
+  const resetForm = () => {
     setNewName('');
     setCustomName('');
-    setNewType('lamp');
-    setNewDimensions('');
+    setNewType('tank');
+    setDimL('');
+    setDimW('');
+    setDimH('');
     setNewPrice(0);
+    setNewDescription('');
+    setNewLumen('');
+    setNewWatt('');
+    setNewLightingHours(8);
+    setNewEnvironment('dark');
+    setNewIsOpen(false);
     setShowAddForm(false);
+    setEditingId(null);
+  };
+
+  const handleEditAccessory = (accessory: any) => {
+    setEditingId(accessory.id);
+    setNewType(accessory.type);
+    
+    // Check if it's a suggestion or custom
+    const allSuggestions = [...suggestedFilters, ...suggestedTanks, ...suggestedLamps];
+    const suggestion = allSuggestions.find(s => s.model === accessory.name);
+    
+    if (suggestion) {
+      setNewName(accessory.name);
+    } else {
+      setNewName('custom');
+      setCustomName(accessory.name);
+    }
+
+    if (accessory.dimensions) {
+      const dims = accessory.dimensions.split('x');
+      if (dims.length === 3) {
+        setDimL(dims[0]);
+        setDimW(dims[1]);
+        setDimH(dims[2]);
+      }
+    } else {
+      setDimL('');
+      setDimW('');
+      setDimH('');
+    }
+
+    setNewPrice(accessory.price);
+    setNewDescription(accessory.description || '');
+    setNewLumen(accessory.lumen?.toString() || '');
+    setNewWatt(accessory.watt?.toString() || '');
+    setNewLightingHours(accessory.lightingHours || 8);
+    setNewEnvironment(accessory.environment || 'dark');
+    setNewIsOpen(accessory.isOpen || false);
+    setShowAddForm(true);
   };
 
   const handleRemoveAccessory = (id: number) => {
@@ -109,9 +202,9 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
           <div className="flex justify-between items-center">
             <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
               <div className="bg-indigo-500/20 p-2 rounded-xl">
-                <Lamp className="text-indigo-400" size={20} />
+                {editingId ? <Edit2 className="text-indigo-400" size={20} /> : <Lamp className="text-indigo-400" size={20} />}
               </div>
-              {t('accessories_title')}
+              {editingId ? t('accessories_edit_title') : t('accessories_title')}
             </h2>
             <button 
               onClick={onClose}
@@ -143,14 +236,19 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
                         setNewType(e.target.value);
                         setNewName('');
                         setCustomName('');
-                        setNewDimensions('');
+                        setDimL('');
+                        setDimW('');
+                        setDimH('');
                         setNewPrice(0);
+                        setNewDescription('');
+                        setNewLumen('');
+                        setNewWatt('');
                       }}
                       className="w-full bg-zinc-800 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm"
                     >
+                      <option value="tank">{t('accessories_type_tank')}</option>
                       <option value="lamp">{t('accessories_type_lamp')}</option>
                       <option value="filter">{t('accessories_type_filter')}</option>
-                      <option value="tank">{t('accessories_type_tank')}</option>
                       <option value="other">{t('accessories_type_other')}</option>
                     </select>
                   </div>
@@ -220,23 +318,158 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
                     )}
                   </div>
 
-                  {(newType === 'tank' || newType === 'lamp') && (
-                    <div>
-                      <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2 ml-1">
-                        {t('accessories_dimensions_label')} {newType === 'lamp' ? '(es. 30 x 5 x 1 cm)' : '(es. 60x30x35)'}
-                      </label>
-                      <div className="relative">
-                        <Ruler className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={16} />
+                  {newType === 'lamp' && (
+                    <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs font-bold text-white/40 uppercase tracking-wider">
+                            {t('add_tank_lighting_hours_label')}
+                          </label>
+                          <span className="text-indigo-400 font-bold text-sm">{newLightingHours}h</span>
+                        </div>
                         <input 
-                          type="text"
-                          value={newDimensions}
-                          onChange={(e) => setNewDimensions(e.target.value)}
-                          placeholder={newType === 'lamp' ? t('accessories_dimensions_placeholder_lamp') : t('accessories_dimensions_placeholder_tank')}
-                          className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm"
+                          type="range" 
+                          min="1" 
+                          max="12" 
+                          step="0.5"
+                          value={newLightingHours}
+                          onChange={(e) => setNewLightingHours(parseFloat(e.target.value))}
+                          className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                        />
+                        <div className="flex justify-between text-[9px] text-white/30 px-1">
+                          <span>1h</span>
+                          <span>6h</span>
+                          <span>12h</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-white/40 uppercase tracking-wider">
+                          {t('add_tank_environment_label')}
+                        </label>
+                        <div className="grid grid-cols-1 gap-1.5">
+                          {[
+                            { id: 'dark', label: t('environment_dark') },
+                            { id: 'bright', label: t('environment_bright') },
+                            { id: 'sunlight', label: t('environment_sunlight') }
+                          ].map((env) => (
+                            <button
+                              key={env.id}
+                              type="button"
+                              onClick={() => setNewEnvironment(env.id)}
+                              className={`p-2.5 rounded-xl border transition-all text-left text-sm ${
+                                newEnvironment === env.id 
+                                  ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' 
+                                  : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                              }`}
+                            >
+                              {env.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {newType === 'lamp' && newName === 'custom' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2 ml-1">
+                          {t('lamp_lumen_label')}
+                        </label>
+                        <input 
+                          type="number"
+                          value={newLumen}
+                          onChange={(e) => setNewLumen(e.target.value)}
+                          placeholder="es. 1200"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2 ml-1">
+                          {t('lamp_watt_label')}
+                        </label>
+                        <input 
+                          type="number"
+                          value={newWatt}
+                          onChange={(e) => setNewWatt(e.target.value)}
+                          placeholder="es. 15"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm"
                         />
                       </div>
                     </div>
                   )}
+
+                  {(newType === 'tank' || newType === 'lamp') && (
+                    <div>
+                      <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2 ml-1">
+                        {t('accessories_dimensions_label')} (cm)
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="relative">
+                          <input 
+                            type="number"
+                            value={dimL}
+                            onChange={(e) => setDimL(e.target.value)}
+                            placeholder="L"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm text-center"
+                          />
+                          <span className="absolute -top-2 left-2 px-1 bg-zinc-900 text-[8px] text-white/40 font-bold uppercase">{t('accessories_dim_length')}</span>
+                        </div>
+                        <div className="relative">
+                          <input 
+                            type="number"
+                            value={dimW}
+                            onChange={(e) => setDimW(e.target.value)}
+                            placeholder="P"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm text-center"
+                          />
+                          <span className="absolute -top-2 left-2 px-1 bg-zinc-900 text-[8px] text-white/40 font-bold uppercase">{t('accessories_dim_width')}</span>
+                        </div>
+                        <div className="relative">
+                          <input 
+                            type="number"
+                            value={dimH}
+                            onChange={(e) => setDimH(e.target.value)}
+                            placeholder="H"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm text-center"
+                          />
+                          <span className="absolute -top-2 left-2 px-1 bg-zinc-900 text-[8px] text-white/40 font-bold uppercase">{t('accessories_dim_height')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {newType === 'tank' && (
+                    <div className="flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/10">
+                      <div>
+                        <p className="text-sm font-bold text-white">{t('accessories_tank_open_label')}</p>
+                        <p className="text-[10px] text-white/40 uppercase tracking-wider">{t('accessories_tank_open_desc')}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setNewIsOpen(!newIsOpen)}
+                        className={`w-12 h-6 rounded-full transition-all relative ${newIsOpen ? 'bg-indigo-500' : 'bg-white/10'}`}
+                      >
+                        <motion.div 
+                          animate={{ x: newIsOpen ? 26 : 2 }}
+                          className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
+                        />
+                      </button>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2 ml-1">
+                      {t('accessories_description_label')}
+                    </label>
+                    <textarea 
+                      value={newDescription}
+                      onChange={(e) => setNewDescription(e.target.value)}
+                      placeholder={t('accessories_placeholder_description')}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm resize-none h-20"
+                    />
+                  </div>
 
                   <div>
                     <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2 ml-1">
@@ -258,7 +491,7 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
                 <div className="flex gap-2 pt-2">
                   <button 
                     type="button"
-                    onClick={() => setShowAddForm(false)}
+                    onClick={resetForm}
                     className="flex-1 py-3 rounded-xl font-bold text-white/60 hover:bg-white/5 transition-colors"
                   >
                     {t('accessories_cancel_button')}
@@ -267,7 +500,7 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
                     type="submit"
                     className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
                   >
-                    {t('accessories_save_button')}
+                    {editingId ? t('accessories_update_button') : t('accessories_save_button')}
                   </button>
                 </div>
               </motion.form>
@@ -307,22 +540,56 @@ export default function AccessoriesModal({ accessories, onUpdate, onClose, tankV
                       </div>
                       <div>
                         <h4 className="text-white font-bold text-base">{accessory.name}</h4>
-                        {accessory.dimensions && (
-                          <p className="text-xs text-white/40 mt-0.5 flex items-center gap-1">
-                            <Ruler size={10} /> {accessory.dimensions}
-                          </p>
+                        {accessory.description && (
+                          <p className="text-xs text-white/60 mt-0.5 line-clamp-2">{accessory.description}</p>
                         )}
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {accessory.type === 'lamp' && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {accessory.lightingHours && (
+                                <p className="text-[10px] text-indigo-400 flex items-center gap-1 bg-indigo-500/10 px-2 py-0.5 rounded-md font-bold">
+                                  <Lamp size={10} /> {accessory.lightingHours}h {t('add_tank_lighting_hours_label').toLowerCase()}
+                                </p>
+                              )}
+                              {accessory.environment && (
+                                <p className="text-[10px] text-indigo-400 flex items-center gap-1 bg-indigo-500/10 px-2 py-0.5 rounded-md font-bold">
+                                  <Sun size={10} /> {t(`environment_${accessory.environment}`)}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          {accessory.dimensions && (
+                            <p className="text-[10px] text-white/40 flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-md">
+                              <Ruler size={10} /> {accessory.dimensions}
+                            </p>
+                          )}
+                          {accessory.type === 'tank' && (
+                            <p className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${accessory.isOpen ? 'bg-orange-500/20 text-orange-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                              {accessory.isOpen ? t('accessories_tank_open_status') : t('accessories_tank_closed_status')}
+                            </p>
+                          )}
+                        </div>
                         <p className="text-sm font-bold text-indigo-400 mt-1">
                           € {accessory.price.toFixed(2)}
                         </p>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => handleRemoveAccessory(accessory.id)}
-                      className="text-white/10 hover:text-red-400 p-1 transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex gap-1">
+                      <button 
+                        onClick={() => handleEditAccessory(accessory)}
+                        className="text-white/10 hover:text-indigo-400 p-1.5 transition-colors rounded-lg hover:bg-white/5"
+                        title={t('accessories_edit_button')}
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleRemoveAccessory(accessory.id)}
+                        className="text-white/10 hover:text-red-400 p-1.5 transition-colors rounded-lg hover:bg-white/5"
+                        title={t('accessories_remove_button')}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               ))

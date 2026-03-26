@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect, useLayoutEffect, memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DollarSign, Droplets, Thermometer, TestTube2, GripVertical, Fish, Leaf, Bell, AlertCircle, Lamp, Box, ShieldCheck, CheckCircle2, LayoutGrid, Plus, Activity } from 'lucide-react';
+import { DollarSign, Droplets, Thermometer, TestTube2, GripVertical, Fish, Leaf, Bell, AlertCircle, Lamp, Box, ShieldCheck, CheckCircle2, LayoutGrid, Plus, Activity, Info, X } from 'lucide-react';
 import { useLocale } from '../context/LocaleContext';
 import usePersistentState from '../hooks/usePersistentState';
 import { useElementWidth } from '../hooks/useElementWidth';
@@ -9,12 +9,12 @@ import LogTestModal from './LogTestModal';
 import InhabitantsModal from './InhabitantsModal';
 import RemindersModal from './RemindersModal';
 import AccessoriesModal from './AccessoriesModal';
+import WaterChemistryModal from './WaterChemistryModal';
 import ValidationReport from './ValidationReport';
 import HistoryChart from './HistoryChart';
 import { Responsive } from 'react-grid-layout';
 import { validateSetup, calculateHealthScore } from '../services/validationService';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
-import { X } from 'lucide-react';
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -22,12 +22,26 @@ interface StatCardProps {
   value: string | number | React.ReactNode;
   colorClass: string;
   onClick?: () => void;
+  onInfoClick?: () => void;
   isEditMode: boolean;
   centered?: boolean;
 }
 
-const StatCard = memo(({ icon, label, value, colorClass, onClick = undefined, isEditMode, centered = false }: StatCardProps) => {
+const StatCard = memo(({ icon, label, value, colorClass, onClick = undefined, onInfoClick, isEditMode, centered = false }: StatCardProps) => {
   const interactiveClasses = onClick ? "cursor-pointer hover:bg-white/10 transition-colors duration-200" : "";
+
+  const infoButton = onInfoClick && !isEditMode && (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onInfoClick();
+      }}
+      className="absolute top-2 right-2 p-1.5 text-white/20 hover:text-white transition-colors z-[30] group/info"
+    >
+      <Info size={14} className="group-hover/info:scale-110 transition-transform" />
+    </button>
+  );
 
   const content = (
     <div className={`flex flex-col h-full ${centered ? 'items-center justify-center text-center' : 'justify-between text-left'}`}>
@@ -37,26 +51,28 @@ const StatCard = memo(({ icon, label, value, colorClass, onClick = undefined, is
         </div>
         <span className="text-white/70 text-xs sm:text-sm lg:text-base font-semibold tracking-wide truncate">{label}</span>
       </div>
-      <p className={`${centered ? 'text-xl sm:text-2xl lg:text-4xl mt-1' : 'text-xl sm:text-2xl lg:text-4xl'} font-bold text-white tracking-tight whitespace-nowrap overflow-hidden text-ellipsis`}>{value}</p>
+      <div className={`${centered ? 'text-xl sm:text-2xl lg:text-4xl mt-1' : 'text-xl sm:text-2xl lg:text-4xl'} font-bold text-white tracking-tight`}>{value}</div>
     </div>
   );
 
   if (onClick) {
     return (
-      <motion.button 
-        type="button"
-        onTap={(e) => {
-          onClick();
-        }}
-        className={`w-full h-full p-3 lg:p-4 flex flex-col outline-none border-none bg-transparent text-left appearance-none select-none z-10 ${interactiveClasses}`}
-      >
-        {content}
-      </motion.button>
+      <div className="relative w-full h-full">
+        {infoButton}
+        <motion.button 
+          type="button"
+          onTap={() => onClick()}
+          className={`w-full h-full p-3 lg:p-4 flex flex-col outline-none border-none bg-transparent text-left appearance-none select-none z-10 ${interactiveClasses}`}
+        >
+          {content}
+        </motion.button>
+      </div>
     );
   }
 
   return (
-    <div className="w-full h-full p-3 lg:p-4 flex flex-col">
+    <div className="relative w-full h-full p-3 lg:p-4 flex flex-col">
+      {infoButton}
       {content}
     </div>
   );
@@ -81,7 +97,10 @@ export default function Dashboard({
   onCloseRemindersInitial,
   isBasicMode = false,
   onShowPaywall,
-  setIsEditingTank
+  setIsEditingTank,
+  onMaintenanceAction,
+  currentTank,
+  maintenanceLogs = []
 }) {
   const { t } = useTranslation();
   const { formatCurrency, formatTemperature } = useLocale();
@@ -91,12 +110,14 @@ export default function Dashboard({
   const [showRemindersModal, setShowRemindersModal] = useState(false);
   const [remindersFilter, setRemindersFilter] = useState<'all' | 'overdue'>('all');
   const [showAccessoriesModal, setShowAccessoriesModal] = useState(false);
+  const [showWaterChemistryModal, setShowWaterChemistryModal] = useState(false);
   const [showValidationModal, setShowValidationModal] = useState(false);
+  const [showInfoParam, setShowInfoParam] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
     // Hide AI Consultant when any editing/config modal is open, EXCEPT for the validation report
-    setIsEditingTank(!!editingParam || showInhabitantsModal || showRemindersModal || showAccessoriesModal);
+    setIsEditingTank(!!editingParam || showInhabitantsModal || showRemindersModal || showAccessoriesModal || showWaterChemistryModal);
     return () => setIsEditingTank(false);
   }, [editingParam, showInhabitantsModal, showRemindersModal, showAccessoriesModal, setIsEditingTank]);
 
@@ -108,7 +129,6 @@ export default function Dashboard({
     }
   }, [showRemindersInitial, onCloseRemindersInitial]);
 
-  const currentTank = tanks[currentTankIndex] || tanks[0];
   const tankVolume = currentTank?.volume || 0;
   const [direction, setDirection] = useState(0);
   const [isReady, setIsReady] = useState(false);
@@ -175,53 +195,38 @@ export default function Dashboard({
   const defaultLayouts = {
     lg: [
       { i: 'reminders', x: 0, y: 0, w: 12, h: 2, minW: 4, minH: 2 },
-      { i: 'temp', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'ph', x: 4, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'nitrates', x: 8, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'kh', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'inhabitants', x: 4, y: 4, w: 8, h: 2, minW: 4, minH: 2 },
+      { i: 'waterChemistry', x: 0, y: 2, w: 12, h: 2, minW: 4, minH: 2 },
+      { i: 'inhabitants', x: 0, y: 4, w: 12, h: 2, minW: 4, minH: 2 },
       { i: 'accessories', x: 0, y: 6, w: 6, h: 2, minW: 3, minH: 2 },
       { i: 'inventory', x: 6, y: 6, w: 6, h: 2, minW: 3, minH: 2 },
     ],
     md: [
       { i: 'reminders', x: 0, y: 0, w: 12, h: 2, minW: 4, minH: 2 },
-      { i: 'temp', x: 0, y: 2, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'ph', x: 6, y: 2, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'nitrates', x: 0, y: 4, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'kh', x: 6, y: 4, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'inhabitants', x: 0, y: 6, w: 12, h: 2, minW: 4, minH: 2 },
-      { i: 'accessories', x: 0, y: 8, w: 6, h: 2, minW: 3, minH: 2 },
-      { i: 'inventory', x: 6, y: 8, w: 6, h: 2, minW: 3, minH: 2 },
+      { i: 'waterChemistry', x: 0, y: 2, w: 12, h: 2, minW: 4, minH: 2 },
+      { i: 'inhabitants', x: 0, y: 4, w: 12, h: 2, minW: 4, minH: 2 },
+      { i: 'accessories', x: 0, y: 6, w: 6, h: 2, minW: 3, minH: 2 },
+      { i: 'inventory', x: 6, y: 6, w: 6, h: 2, minW: 3, minH: 2 },
     ],
     sm: [
       { i: 'reminders', x: 0, y: 0, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'temp', x: 0, y: 2, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'ph', x: 0, y: 4, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'nitrates', x: 0, y: 6, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'kh', x: 0, y: 8, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'inhabitants', x: 0, y: 10, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'accessories', x: 0, y: 12, w: 6, h: 2, minW: 4, minH: 2 },
-      { i: 'inventory', x: 0, y: 14, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'waterChemistry', x: 0, y: 2, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'inhabitants', x: 0, y: 4, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'accessories', x: 0, y: 6, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'inventory', x: 0, y: 8, w: 6, h: 2, minW: 4, minH: 2 },
     ],
     xs: [
       { i: 'reminders', x: 0, y: 0, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'temp', x: 0, y: 2, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'ph', x: 0, y: 4, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'nitrates', x: 0, y: 6, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'kh', x: 0, y: 8, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'inhabitants', x: 0, y: 10, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'accessories', x: 0, y: 12, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'inventory', x: 0, y: 14, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'waterChemistry', x: 0, y: 2, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'inhabitants', x: 0, y: 4, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'accessories', x: 0, y: 6, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'inventory', x: 0, y: 8, w: 6, h: 2, minW: 6, minH: 2 },
     ],
     xxs: [
       { i: 'reminders', x: 0, y: 0, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'temp', x: 0, y: 2, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'ph', x: 0, y: 4, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'nitrates', x: 0, y: 6, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'kh', x: 0, y: 8, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'inhabitants', x: 0, y: 10, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'accessories', x: 0, y: 12, w: 6, h: 2, minW: 6, minH: 2 },
-      { i: 'inventory', x: 0, y: 14, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'waterChemistry', x: 0, y: 2, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'inhabitants', x: 0, y: 4, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'accessories', x: 0, y: 6, w: 6, h: 2, minW: 6, minH: 2 },
+      { i: 'inventory', x: 0, y: 8, w: 6, h: 2, minW: 6, minH: 2 },
     ]
   };
 
@@ -244,20 +249,35 @@ export default function Dashboard({
     return processedLayouts;
   }, [layouts, isEditMode]);
 
-  const latestLog = testLogs?.[0] || {};
+  const tankLogs = useMemo(() => 
+    testLogs.filter(log => log.tankId === currentTank?.id)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()), 
+    [testLogs, currentTank?.id]
+  );
+  const latestLog = tankLogs[0] || {};
   
   const validationResult = useMemo(() => {
     if (!currentTank) return null;
+    const parseParam = (val: any) => {
+      if (val === null || val === undefined || val === '') return undefined;
+      const parsed = parseFloat(val);
+      return isNaN(parsed) ? undefined : parsed;
+    };
+
     return validateSetup(
       currentTank,
       accessories,
       inhabitants,
       {
-        ph: latestLog.ph || 7,
-        kh: latestLog.kh || 6,
-        temp: latestLog.temp !== null && typeof latestLog.temp !== 'undefined' ? latestLog.temp : (currentTank?.baseTemp || 25),
-        gh: 10,
-        nitrates: latestLog.nitrates || 0
+        ph: parseParam(latestLog.ph),
+        kh: parseParam(latestLog.kh),
+        temp: parseParam(latestLog.temp) ?? currentTank?.baseTemp,
+        gh: parseParam(latestLog.gh),
+        nitrates: parseParam(latestLog.nitrates),
+        po4: parseParam(latestLog.po4),
+        nh4: parseParam(latestLog.nh4),
+        no2: parseParam(latestLog.no2),
+        cu: parseParam(latestLog.cu)
       }
     );
   }, [currentTank, accessories, inhabitants, latestLog]);
@@ -277,15 +297,16 @@ export default function Dashboard({
       {
         ...inhabitants,
         waterParams: {
-          ph: latestLog.ph || 7,
-          kh: latestLog.kh || 6,
-          temp: latestLog.temp || 25,
-          gh: 10,
-          nitrates: latestLog.nitrates || 0
+          ph: latestLog.ph,
+          kh: latestLog.kh,
+          temp: latestLog.temp,
+          gh: latestLog.gh,
+          nitrates: latestLog.nitrates
         }
-      }
+      },
+      maintenanceLogs
     );
-  }, [testLogs, reminders, validationResult, inhabitants, latestLog]);
+  }, [testLogs, reminders, validationResult, inhabitants, latestLog, maintenanceLogs]);
 
   const inventoryValue = useMemo(() => {
     const fishValue = inhabitants.fish.reduce((acc, f) => acc + (f.price * (f.quantity || 1)), 0);
@@ -295,6 +316,64 @@ export default function Dashboard({
   }, [inhabitants, accessories]);
 
   const ResponsiveGridLayout = Responsive as any;
+
+const PARAM_INFO = {
+  temp: {
+    title: 'Temperatura',
+    description: 'La temperatura influisce sul metabolismo di pesci e piante. Ogni specie ha un intervallo ottimale per vivere in salute.',
+    howToMeasure: 'Usa un termometro per acquari (a vetro, adesivo o digitale) posizionato in un punto con buona circolazione d\'acqua, lontano dal riscaldatore.'
+  },
+  ph: {
+    title: 'pH',
+    description: 'Misura l\'acidità o l\'alcalinità dell\'acqua su una scala da 0 a 14. Un pH stabile è fondamentale per evitare stress osmotico ai pesci.',
+    howToMeasure: 'Si misura con test a reagente liquido (più precisi), strisce reattive o misuratori elettronici (piaccametro) che richiedono calibrazione periodica.'
+  },
+  nitrates: {
+    title: 'Nitrati (NO3)',
+    description: 'Prodotto finale del ciclo dell\'azoto. Sebbene meno tossici dell\'ammoniaca, livelli elevati (>20-40 mg/L) indicano la necessità di un cambio d\'acqua.',
+    howToMeasure: 'Usa test a reagente liquido specifici. Agita bene i flaconi seguendo le istruzioni, poiché i reagenti dei nitrati tendono a sedimentare.'
+  },
+  kh: {
+    title: 'KH (Durezza Carbonatica)',
+    description: 'Rappresenta la capacità tampone dell\'acqua. Un KH adeguato (solitamente >4) impedisce sbalzi improvvisi e pericolosi del pH.',
+    howToMeasure: 'Si misura con test a reagente a gocce. Conta quante gocce servono per far virare il colore del campione: ogni goccia corrisponde a 1 grado tedesco (°dKH).'
+  },
+  gh: {
+    title: 'GH (Durezza Totale)',
+    description: 'Misura la concentrazione di sali di calcio e magnesio. È fondamentale per l\'osmoregolazione e la salute generale di pesci e invertebrati.',
+    howToMeasure: 'Si misura con test a reagente a gocce, in modo identico al KH. Il viraggio del colore indica il valore della durezza totale in gradi tedeschi (°dGH).'
+  },
+  nh4: {
+    title: 'Ammonio (NH4+)',
+    description: 'L\'ammonio è la forma meno tossica dell\'ammoniaca, ma può trasformarsi in ammoniaca tossica (NH3) a pH elevati.',
+    howToMeasure: 'Usa test a reagente liquido. È fondamentale monitorarlo durante l\'avvio dell\'acquario o in caso di picchi di inquinamento.'
+  },
+  no2: {
+    title: 'Nitriti (NO2)',
+    description: 'Estremamente tossici per i pesci, i nitriti impediscono il trasporto di ossigeno nel sangue. Devono essere sempre a zero.',
+    howToMeasure: 'Usa test a reagente liquido. In caso di presenza di nitriti, è necessario intervenire immediatamente con cambi d\'acqua.'
+  },
+  cu: {
+    title: 'Rame (Cu)',
+    description: 'Il rame è letale per gli invertebrati (gamberetti, lumache) anche in piccole dosi. Può derivare da tubature o medicinali.',
+    howToMeasure: 'Usa test a reagente specifici per il rame, specialmente se intendi inserire caridine o lumache.'
+  },
+  po4: {
+    title: 'Fosfati (PO4)',
+    description: 'Nutriente per le piante, ma se in eccesso rispetto ai nitrati può causare esplosioni algali (alghe a pennello o cianobatteri).',
+    howToMeasure: 'Usa test a reagente liquido. Il rapporto ideale con i nitrati (Redfield) è fondamentale per l\'equilibrio.'
+  },
+  k: {
+    title: 'Potassio (K)',
+    description: 'Macronutriente essenziale per le piante. Una carenza causa buchi nelle foglie vecchie e arresto della crescita.',
+    howToMeasure: 'Usa test a reagente specifici per il potassio. È uno dei nutrienti più difficili da bilanciare senza test.'
+  },
+  fe: {
+    title: 'Ferro (Fe)',
+    description: 'Micronutriente fondamentale per la fotosintesi e il colore rosso delle piante. Deve essere presente in tracce.',
+    howToMeasure: 'Usa test a reagente per il ferro chelato. Un eccesso può favorire le alghe filamentose.'
+  }
+};
 
   const handleLongPress = useCallback((action?: () => void) => {
     if (!isEditMode) {
@@ -307,10 +386,7 @@ export default function Dashboard({
   }, [isEditMode]);
 
   const healthLongPress = useLongPress(() => handleLongPress());
-  const tempLongPress = useLongPress(() => handleLongPress());
-  const phLongPress = useLongPress(() => handleLongPress());
-  const nitratesLongPress = useLongPress(() => handleLongPress());
-  const khLongPress = useLongPress(() => handleLongPress());
+  const waterChemistryLongPress = useLongPress(() => handleLongPress());
   const inventoryLongPress = useLongPress(() => handleLongPress());
   const inhabitantsLongPress = useLongPress(() => handleLongPress());
   const remindersLongPress = useLongPress(() => handleLongPress());
@@ -569,9 +645,9 @@ export default function Dashboard({
                 </div>
               </div>
 
-              <div key="temp" 
+              <div key="waterChemistry" 
                 className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
-                {...tempLongPress}
+                {...waterChemistryLongPress}
               >
                 <div className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}>
                   {isEditMode && (
@@ -580,77 +656,34 @@ export default function Dashboard({
                     </div>
                   )}
                   <StatCard 
-                    icon={<Thermometer size={20} className="text-red-300" />} 
-                    label={t('log_test_temp')} 
-                    value={latestLog.temp !== null && typeof latestLog.temp !== 'undefined' ? formatTemperature(latestLog.temp) : (currentTank?.baseTemp ? formatTemperature(currentTank.baseTemp) : '--')} 
-                    colorClass="bg-red-500/20" 
-                    onClick={() => setEditingParam('temp')}
-                    isEditMode={isEditMode}
-                    centered={true}
-                  />
-                </div>
-              </div>
-
-              <div key="ph" 
-                className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
-                {...phLongPress}
-              >
-                <div className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}>
-                  {isEditMode && (
-                    <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
-                      <GripVertical size={20} />
-                    </div>
-                  )}
-                  <StatCard 
-                    icon={<TestTube2 size={20} className="text-sky-300" />} 
-                    label="pH" 
-                    value={latestLog.ph || '--'} 
-                    colorClass="bg-sky-500/20" 
-                    onClick={() => setEditingParam('ph')}
-                    isEditMode={isEditMode}
-                    centered={true}
-                  />
-                </div>
-              </div>
-
-              <div key="nitrates" 
-                className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
-                {...nitratesLongPress}
-              >
-                <div className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}>
-                  {isEditMode && (
-                    <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
-                      <GripVertical size={20} />
-                    </div>
-                  )}
-                  <StatCard 
-                    icon={<Droplets size={20} className="text-amber-300" />} 
-                    label={t('log_test_nitrates')} 
-                    value={latestLog.nitrates ? `${latestLog.nitrates} mg/L` : '--'} 
-                    colorClass="bg-amber-500/20" 
-                    onClick={() => setEditingParam('nitrates')}
-                    isEditMode={isEditMode}
-                    centered={true}
-                  />
-                </div>
-              </div>
-
-              <div key="kh" 
-                className={`relative group touch-pan-y ${isEditMode ? 'z-30 touch-none' : ''}`}
-                {...khLongPress}
-              >
-                <div className={`w-full h-full bg-white/5 border border-white/10 rounded-2xl transition-all duration-200 ${isEditMode ? 'ring-2 ring-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] animate-wiggle bg-white/10' : ''}`}>
-                  {isEditMode && (
-                    <div className="drag-handle absolute top-0 right-0 p-3 opacity-100 cursor-grab active:cursor-grabbing text-emerald-400 z-30 touch-action-none">
-                      <GripVertical size={20} />
-                    </div>
-                  )}
-                  <StatCard 
-                    icon={<Droplets size={20} className="text-indigo-300" />} 
-                    label={t('log_test_kh')} 
-                    value={latestLog.kh ? `${latestLog.kh} °dKH` : '--'} 
-                    colorClass="bg-indigo-500/20" 
-                    onClick={() => setEditingParam('kh')}
+                    icon={<TestTube2 size={20} className="text-emerald-300" />} 
+                    label={t('water_chemistry_title')} 
+                    value={
+                      <div className="grid grid-cols-6 gap-x-3 gap-y-1 w-full mt-2">
+                        {[
+                          { key: 'temp', label: 'T' },
+                          { key: 'ph', label: 'pH' },
+                          { key: 'kh', label: 'KH' },
+                          { key: 'gh', label: 'GH' },
+                          { key: 'nitrates', label: 'NO3' },
+                          { key: 'po4', label: 'PO4' },
+                          { key: 'nh4', label: 'NH4' },
+                          { key: 'no2', label: 'NO2' },
+                          { key: 'cu', label: 'Cu' },
+                          { key: 'k', label: 'K' },
+                          { key: 'fe', label: 'Fe' }
+                        ].map(param => (
+                          <div key={param.key} className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-[11px] font-black text-white/30 uppercase shrink-0">{param.label}</span>
+                            <span className="text-[13px] font-bold text-white/80 truncate">
+                              {latestLog[param.key] !== undefined && latestLog[param.key] !== null ? latestLog[param.key] : '--'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    } 
+                    colorClass="bg-emerald-500/20" 
+                    onClick={() => setShowWaterChemistryModal(true)}
                     isEditMode={isEditMode}
                     centered={true}
                   />
@@ -766,16 +799,76 @@ export default function Dashboard({
   </div>
   </div>
 
-    {editingParam && (
-        <LogTestModal 
-          parameter={editingParam}
-          testLogs={testLogs}
-          onClose={() => setEditingParam(null)} 
-          onLogTest={onLogTest} 
-          onDeleteLog={handleDeleteTestLog}
-          onResetHistory={onResetHistory}
-        />
+      {showInfoParam && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowInfoParam(null)}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-sm bg-zinc-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden p-6"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="bg-indigo-500/20 p-2 rounded-xl text-indigo-400">
+                  <Info size={20} />
+                </div>
+                <h3 className="text-xl font-bold text-white">{PARAM_INFO[showInfoParam].title}</h3>
+              </div>
+              <button 
+                onClick={() => setShowInfoParam(null)}
+                className="p-1.5 hover:bg-white/5 rounded-full transition-colors"
+              >
+                <X size={20} className="text-white/40" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <p className="text-[10px] text-indigo-400 uppercase tracking-widest font-black">{t('dashboard_info_what_is')}</p>
+                <p className="text-sm text-white/80 leading-relaxed">
+                  {PARAM_INFO[showInfoParam].description}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-[10px] text-emerald-400 uppercase tracking-widest font-black">{t('dashboard_info_how_to_measure')}</p>
+                <p className="text-sm text-white/80 leading-relaxed">
+                  {PARAM_INFO[showInfoParam].howToMeasure}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowInfoParam(null)}
+                className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-colors mt-4"
+              >
+                {t('close')}
+              </button>
+            </div>
+          </motion.div>
+        </div>
       )}
+
+      {editingParam && (
+          <LogTestModal 
+            parameter={editingParam}
+            testLogs={testLogs}
+            onClose={() => setEditingParam(null)} 
+            onLogTest={onLogTest} 
+            onDeleteLog={handleDeleteTestLog}
+            onResetHistory={onResetHistory}
+            onMaintenanceAction={onMaintenanceAction}
+            tank={currentTank}
+            accessories={accessories}
+            validationResult={validationResult}
+          />
+        )}
 
       {showInhabitantsModal && (
         <InhabitantsModal 
@@ -787,15 +880,19 @@ export default function Dashboard({
       )}
 
       {showRemindersModal && (
-        <RemindersModal 
-          reminders={reminders}
-          onUpdate={onUpdateReminders}
-          onClose={() => {
-            setShowRemindersModal(false);
-            setRemindersFilter('all');
-          }}
-          initialFilter={remindersFilter}
-        />
+          <RemindersModal 
+            tank={currentTank}
+            reminders={reminders}
+            onUpdate={onUpdateReminders}
+            onMaintenanceAction={onMaintenanceAction}
+            onClose={() => {
+              setShowRemindersModal(false);
+              setRemindersFilter('all');
+            }}
+            initialFilter={remindersFilter}
+            accessories={accessories}
+            validationResult={validationResult}
+          />
       )}
 
       {showAccessoriesModal && (
@@ -804,6 +901,19 @@ export default function Dashboard({
           onUpdate={onUpdateAccessories}
           onClose={() => setShowAccessoriesModal(false)}
           tankVolume={tankVolume}
+        />
+      )}
+
+      {showWaterChemistryModal && (
+        <WaterChemistryModal 
+          testLogs={tankLogs}
+          onLogTest={onLogTest}
+          onDeleteLog={handleDeleteTestLog}
+          onResetHistory={onResetHistory}
+          onClose={() => setShowWaterChemistryModal(false)}
+          tank={currentTank}
+          accessories={accessories}
+          inhabitants={inhabitants}
         />
       )}
 
@@ -833,7 +943,13 @@ export default function Dashboard({
                 </button>
               </div>
               <div className="p-6 overflow-y-auto custom-scrollbar">
-                <ValidationReport result={validationResult} testLogs={testLogs} healthScore={healthScore} />
+                <ValidationReport 
+                  result={validationResult} 
+                  testLogs={testLogs} 
+                  healthScore={healthScore} 
+                  tank={currentTank}
+                  accessories={accessories}
+                />
               </div>
             </motion.div>
           </div>

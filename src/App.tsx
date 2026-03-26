@@ -31,6 +31,7 @@ export default function App() {
   const [inhabitantsByTank, setInhabitantsByTank] = usePersistentState('userInhabitants_v6', {});
   const [accessories, setAccessories] = usePersistentState('userAccessories_v3', []);
   const [reminders, setReminders] = usePersistentState('userReminders_v3', []);
+  const [maintenanceLogs, setMaintenanceLogs] = usePersistentState('userMaintenanceLogs_v1', []);
   const trialState = useTrial();
 
   const [showRemindersFromHeader, setShowRemindersFromHeader] = useState(false);
@@ -40,6 +41,10 @@ export default function App() {
     setCurrentPage('dashboard');
   };
 
+  useEffect(() => {
+    console.log('testLogs updated:', testLogs);
+  }, [testLogs]);
+
   const handleLogout = () => {
     setIsAuthenticated(false);
     setTanks([]); // This will also clear it from localStorage via the hook
@@ -47,6 +52,7 @@ export default function App() {
     setInhabitantsByTank({});
     setAccessories([]);
     setReminders([]);
+    setMaintenanceLogs([]);
   };
 
   const handleShowReminders = () => {
@@ -54,11 +60,20 @@ export default function App() {
     setShowRemindersFromHeader(true);
   };
 
-  const handleTankAdded = (newTank) => {
+  const handleTankAdded = (newTank, initialAccessories = []) => {
     const tankId = Date.now();
     const tankWithId = { ...newTank, id: tankId };
     const updatedTanks = [...tanks, tankWithId];
     setTanks(updatedTanks);
+    
+    if (initialAccessories.length > 0) {
+      const accessoriesWithIds = initialAccessories.map(acc => ({
+        ...acc,
+        id: Date.now() + Math.random(),
+        tankId: tankId
+      }));
+      setAccessories(prev => [...prev, ...accessoriesWithIds]);
+    }
     
     // Create initial log entry with the base temperature so it appears in history/charts
     if (newTank.baseTemp !== undefined) {
@@ -68,7 +83,8 @@ export default function App() {
         temp: newTank.baseTemp,
         ph: null,
         nitrates: null,
-        kh: null
+        kh: null,
+        gh: null
       };
       setTestLogs(prev => [initialLog, ...prev]);
     }
@@ -87,7 +103,7 @@ export default function App() {
         .filter(log => log.tankId === currentTankId)
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       
-      const latestLog = tankLogs[0] || { temp: null, ph: null, nitrates: null, kh: null };
+      const latestLog = tankLogs[0] || { temp: null, ph: null, nitrates: null, kh: null, gh: null };
       const newLog = {
         ...latestLog,
         ...partialLog,
@@ -99,27 +115,48 @@ export default function App() {
   };
 
   const handleDeleteTestLog = (timestamp) => {
-    setTestLogs(prevLogs => prevLogs.filter(log => log.timestamp !== timestamp));
+    console.error('CRITICAL: handleDeleteTestLog called with timestamp:', timestamp);
+    setTestLogs(prevLogs => {
+      console.log('Previous logs count:', prevLogs.length);
+      const newLogs = prevLogs.filter(log => log.timestamp !== timestamp);
+      console.log('Logs count after delete:', newLogs.length);
+      return newLogs;
+    });
   };
 
-  const onResetHistory = (parameter) => {
-    const currentTankId = tanks[currentTankIndex]?.id;
-    if (!currentTankId) return;
+  const onResetHistory = (parameter?: string) => {
+    const safeIndex = Math.min(Math.max(0, currentTankIndex), Math.max(0, tanks.length - 1));
+    const currentTankId = tanks[safeIndex]?.id;
+    console.error('CRITICAL: onResetHistory called for tank:', currentTankId, 'parameter:', parameter);
+    if (!currentTankId) {
+      console.error('CRITICAL: No currentTankId found for reset');
+      return;
+    }
 
     setTestLogs(prevLogs => {
+      console.log('Previous logs count before reset:', prevLogs.length);
+      if (!parameter) {
+        // Clear all logs for this tank
+        const newLogs = prevLogs.filter(log => log.tankId !== currentTankId);
+        console.log('New logs count after full reset:', newLogs.length);
+        return newLogs;
+      }
+
+      // Clear specific parameter across all logs for this tank
       const updatedLogs = prevLogs.map(log => {
         if (log.tankId === currentTankId) {
-          return {
-            ...log,
-            [parameter]: null,
-          };
+          const { [parameter]: _, ...rest } = log;
+          return rest;
         }
         return log;
       });
-      const cleanedLogs = updatedLogs.filter(
-        log => log.temp != null || log.ph != null || log.nitrates != null
-      );
-      return cleanedLogs;
+
+      // Remove logs that have no chemistry data left
+      return updatedLogs.filter(log => {
+        const keys = Object.keys(log);
+        const hasData = keys.some(k => !['id', 'timestamp', 'tankId'].includes(k));
+        return hasData;
+      });
     });
   };
 
@@ -153,6 +190,40 @@ export default function App() {
       const updatedAccessories = newAccessories.map(a => ({ ...a, tankId: currentTankId }));
       return [...otherTanksAccessories, ...updatedAccessories];
     });
+
+    // Update Water Top-up reminder frequency if tank status changed
+    const tankAccessory = newAccessories.find(a => a.type === 'tank');
+    if (tankAccessory) {
+      const isTankOpen = tankAccessory.isOpen;
+      const targetFrequency = isTankOpen ? 3 : 7;
+      
+      setReminders(prevReminders => {
+        return prevReminders.map(r => {
+          if (r.tankId === currentTankId && r.task === t('task_suggestion_water_topup')) {
+            if (r.frequency !== targetFrequency) {
+              const lastDone = new Date(r.lastDone);
+              return {
+                ...r,
+                frequency: targetFrequency,
+                nextDue: new Date(lastDone.getTime() + targetFrequency * 24 * 60 * 60 * 1000).toISOString()
+              };
+            }
+          }
+          return r;
+        });
+      });
+    }
+  };
+
+  const handleMaintenanceAction = (tankId: any, task: string, data: any) => {
+    const newLog = {
+      id: Date.now(),
+      tankId,
+      task,
+      data,
+      timestamp: new Date().toISOString()
+    };
+    setMaintenanceLogs(prev => [newLog, ...prev]);
   };
 
   const handleUpdateTank = (updatedTank) => {
@@ -295,6 +366,9 @@ export default function App() {
             isBasicMode={isBasicMode}
             onShowPaywall={() => setIsBasicMode(false)}
             setIsEditingTank={setIsEditingTank}
+            onMaintenanceAction={handleMaintenanceAction}
+            currentTank={currentTank}
+            maintenanceLogs={maintenanceLogs}
           />
         )}
         <AnimatePresence>
